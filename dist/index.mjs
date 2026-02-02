@@ -45,8 +45,8 @@ function registerInitCommand(cli) {
 		}
 		const excludePattern = await p.text({
 			message: "Which files should be excluded?",
-			placeholder: "**/*.test.ts,**/*.spec.ts",
-			initialValue: "**/*.test.ts,**/*.spec.ts"
+			placeholder: "**/*.test.ts,**/*.spec.ts,node_modules/**,dist/**,build/**",
+			initialValue: "**/*.test.ts,**/*.spec.ts,node_modules/**,dist/**,build/**"
 		});
 		if (p.isCancel(excludePattern)) {
 			p.cancel("Setup cancelled");
@@ -164,7 +164,7 @@ Call out important patterns and conventions.`
 }
 function generateConfigYAML(config) {
 	return `# syncdocs configuration
-# Learn more: https://syncdocs.dev/docs/config
+# Learn more: https://github.com/fredrivett/syncdocs
 
 output:
   # Where generated documentation will be stored
