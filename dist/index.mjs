@@ -25,7 +25,7 @@ function registerInitCommand(cli) {
 				process.exit(0);
 			}
 		}
-		const outputDir = await p.text({
+		let outputDir = await p.text({
 			message: "Where should docs be generated?",
 			placeholder: "_syncdocs"
 		});
@@ -33,13 +33,21 @@ function registerInitCommand(cli) {
 			p.cancel("Setup cancelled");
 			process.exit(0);
 		}
-		const includePattern = await p.text({
+		if (!outputDir || outputDir.trim() === "") {
+			outputDir = "_syncdocs";
+			p.log.info(`Using default: ${outputDir}`);
+		}
+		let includePattern = await p.text({
 			message: "Which files should be documented?",
 			placeholder: "src/**/*.{ts,tsx,js,jsx}"
 		});
 		if (p.isCancel(includePattern)) {
 			p.cancel("Setup cancelled");
 			process.exit(0);
+		}
+		if (!includePattern || includePattern.trim() === "") {
+			includePattern = "src/**/*.{ts,tsx,js,jsx}";
+			p.log.info(`Using default: ${includePattern}`);
 		}
 		const excludePattern = await p.text({
 			message: "Which files should be excluded?",
