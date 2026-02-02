@@ -7,7 +7,6 @@ import { join } from 'node:path'
 interface InitConfig {
   output: {
     dir: string
-    structure: 'mirror' | 'flat'
   }
   scope: {
     include: string[]
@@ -48,8 +47,8 @@ export function registerInitCommand(cli: CAC) {
       // Gather configuration
       const outputDir = await p.text({
         message: 'Where should docs be generated?',
-        placeholder: '_syncdocs',
-        initialValue: '_syncdocs',
+        placeholder: '_syncdocs (press enter for default)',
+        defaultValue: '_syncdocs',
         validate: (value) => {
           if (!value) return 'Output directory is required'
         },
@@ -62,8 +61,8 @@ export function registerInitCommand(cli: CAC) {
 
       const includePattern = await p.text({
         message: 'Which files should be documented?',
-        placeholder: 'src/**/*.ts',
-        initialValue: 'src/**/*.ts',
+        placeholder: 'src/**/*.{ts,tsx,js,jsx} (press enter for default)',
+        defaultValue: 'src/**/*.{ts,tsx,js,jsx}',
       })
 
       if (p.isCancel(includePattern)) {
@@ -112,8 +111,8 @@ export function registerInitCommand(cli: CAC) {
           },
           {
             value: 'custom',
-            label: 'Custom prompt',
-            hint: 'Write your own documentation guidelines',
+            label: 'Custom prompt (advanced)',
+            hint: 'Define your own doc generation guidelines',
           },
         ],
         initialValue: 'senior',
@@ -159,7 +158,6 @@ export function registerInitCommand(cli: CAC) {
       const config: InitConfig = {
         output: {
           dir: outputDir as string,
-          structure: 'mirror',
         },
         scope: {
           include: [includePattern as string],
@@ -227,8 +225,6 @@ function generateConfigYAML(config: InitConfig): string {
 output:
   # Where generated documentation will be stored
   dir: ${config.output.dir}
-  # How to organize docs: "mirror" matches source tree, "flat" puts all in one dir
-  structure: ${config.output.structure}
 
 scope:
   # Files to include in documentation

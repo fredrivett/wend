@@ -27,8 +27,8 @@ function registerInitCommand(cli) {
 		}
 		const outputDir = await p.text({
 			message: "Where should docs be generated?",
-			placeholder: "_syncdocs",
-			initialValue: "_syncdocs",
+			placeholder: "_syncdocs (press enter for default)",
+			defaultValue: "_syncdocs",
 			validate: (value) => {
 				if (!value) return "Output directory is required";
 			}
@@ -39,8 +39,8 @@ function registerInitCommand(cli) {
 		}
 		const includePattern = await p.text({
 			message: "Which files should be documented?",
-			placeholder: "src/**/*.ts",
-			initialValue: "src/**/*.ts"
+			placeholder: "src/**/*.{ts,tsx,js,jsx} (press enter for default)",
+			defaultValue: "src/**/*.{ts,tsx,js,jsx}"
 		});
 		if (p.isCancel(includePattern)) {
 			p.cancel("Setup cancelled");
@@ -92,8 +92,8 @@ function registerInitCommand(cli) {
 				},
 				{
 					value: "custom",
-					label: "Custom prompt",
-					hint: "Write your own documentation guidelines"
+					label: "Custom prompt (advanced)",
+					hint: "Define your own doc generation guidelines"
 				}
 			],
 			initialValue: "senior"
@@ -128,10 +128,7 @@ function registerInitCommand(cli) {
 		const s = p.spinner();
 		s.start("Creating configuration...");
 		const config = {
-			output: {
-				dir: outputDir,
-				structure: "mirror"
-			},
+			output: { dir: outputDir },
 			scope: {
 				include: [includePattern],
 				exclude: excludePattern.split(",").map((p) => p.trim()).filter(Boolean)
@@ -175,8 +172,6 @@ function generateConfigYAML(config) {
 output:
   # Where generated documentation will be stored
   dir: ${config.output.dir}
-  # How to organize docs: "mirror" matches source tree, "flat" puts all in one dir
-  structure: ${config.output.structure}
 
 scope:
   # Files to include in documentation
