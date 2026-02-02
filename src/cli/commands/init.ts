@@ -47,8 +47,7 @@ export function registerInitCommand(cli: CAC) {
       // Gather configuration
       const outputDir = await p.text({
         message: 'Where should docs be generated?',
-        placeholder: 'e.g., _syncdocs',
-        initialValue: '_syncdocs',
+        placeholder: '_syncdocs',
       })
 
       if (p.isCancel(outputDir)) {
@@ -58,8 +57,7 @@ export function registerInitCommand(cli: CAC) {
 
       const includePattern = await p.text({
         message: 'Which files should be documented?',
-        placeholder: 'e.g., src/**/*.{ts,tsx,js,jsx}',
-        initialValue: 'src/**/*.{ts,tsx,js,jsx}',
+        placeholder: 'src/**/*.{ts,tsx,js,jsx}',
       })
 
       if (p.isCancel(includePattern)) {
