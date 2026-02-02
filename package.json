@@ -1,9 +1,16 @@
 {
   "name": "syncdocs",
   "version": "0.0.1",
-  "main": "index.js",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "syncdocs": "./dist/cli/index.js"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsdown src/cli/index.ts --watch",
+    "build": "tsdown src/cli/index.ts",
+    "syncdocs": "node dist/cli/index.js",
+    "test": "vitest"
   },
   "keywords": [],
   "author": "@fredrivett",
