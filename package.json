@@ -13,7 +13,8 @@
     "test": "vitest",
     "test:extractor": "tsx scripts/test-extractor.ts",
     "format": "biome check --write .",
-    "format:check": "biome check ."
+    "format:check": "biome check .",
+    "format:unsafe": "biome check --write --unsafe ."
   },
   "keywords": [],
   "author": "@fredrivett",
