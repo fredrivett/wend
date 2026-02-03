@@ -96,12 +96,23 @@ export class AIClient {
     prompt += `\nSource code:\n\`\`\`typescript\n${symbol.fullText}\n\`\`\`\n\n`;
 
     prompt += `Generate documentation that includes:\n`;
-    prompt += `1. A clear title using the symbol name\n`;
-    prompt += `2. A brief overview of what this ${symbol.kind} does\n`;
-    prompt += `3. Parameters (if applicable) with descriptions\n`;
-    prompt += `4. Return value (if applicable)\n`;
-    prompt += `5. Usage examples\n`;
-    prompt += `6. Any important notes or edge cases\n\n`;
+    prompt += `1. A clear h1 title using the symbol name\n`;
+    prompt += `2. A brief overview (2-3 sentences) of what this ${symbol.kind} does\n`;
+    prompt += `3. Parameters section (if applicable) with descriptions\n`;
+    prompt += `4. Return value section (if applicable)\n`;
+    prompt += `5. Usage examples in collapsible sections\n`;
+    prompt += `6. Implementation details in a collapsible section\n`;
+    prompt += `7. Edge cases and notes in a collapsible section (if applicable)\n\n`;
+
+    prompt += `IMPORTANT: Use collapsible sections for detailed content to keep docs scannable.\n`;
+    prompt += `Use this syntax for collapsible sections:\n`;
+    prompt += `<details>\n<summary>Section Title</summary>\n\nContent here\n\n</details>\n\n`;
+
+    prompt += `Recommended collapsible sections:\n`;
+    prompt += `- "Usage Examples" - Multiple code examples\n`;
+    prompt += `- "Implementation Details" - How it works internally\n`;
+    prompt += `- "Edge Cases" - Special cases and gotchas\n`;
+    prompt += `- "Related" - Related functions or concepts\n\n`;
 
     prompt += `Format the documentation in clean markdown. Do NOT include frontmatter or metadata - just the documentation content.\n`;
 
