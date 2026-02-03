@@ -12,3 +12,7 @@ dist/
 
 # Test artifacts
 .test-*
+
+# Generated documentation (keep config.yaml but ignore generated .md files)
+_syncdocs/*.md
+_syncdocs/**/*.md
