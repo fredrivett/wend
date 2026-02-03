@@ -2,16 +2,16 @@
  * Parse documentation files with frontmatter
  */
 
-import { readFileSync } from 'node:fs'
-import type { DocDependency, DocMetadata } from './types.js'
+import { readFileSync } from 'node:fs';
+import type { DocDependency, DocMetadata } from './types.js';
 
 export class DocParser {
   /**
    * Parse a doc file and extract metadata from frontmatter
    */
   parseDocFile(filePath: string): DocMetadata {
-    const content = readFileSync(filePath, 'utf-8')
-    return this.parseFrontmatter(content)
+    const content = readFileSync(filePath, 'utf-8');
+    return this.parseFrontmatter(content);
   }
 
   /**
@@ -28,58 +28,58 @@ export class DocParser {
    * ---
    */
   private parseFrontmatter(content: string): DocMetadata {
-    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/)
+    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
 
     if (!frontmatterMatch) {
-      throw new Error('No frontmatter found in doc file')
+      throw new Error('No frontmatter found in doc file');
     }
 
-    const frontmatter = frontmatterMatch[1]
-    const lines = frontmatter.split('\n')
+    const frontmatter = frontmatterMatch[1];
+    const lines = frontmatter.split('\n');
 
-    let title = ''
-    let generated = ''
-    const dependencies: DocDependency[] = []
-    let inDependencies = false
-    let currentDep: Partial<DocDependency> | null = null
+    let title = '';
+    let generated = '';
+    const dependencies: DocDependency[] = [];
+    let inDependencies = false;
+    let currentDep: Partial<DocDependency> | null = null;
 
     for (const line of lines) {
-      const trimmed = line.trim()
+      const trimmed = line.trim();
 
       if (trimmed.startsWith('title:')) {
-        title = trimmed.substring(6).trim()
+        title = trimmed.substring(6).trim();
       } else if (trimmed.startsWith('generated:')) {
-        generated = trimmed.substring(10).trim()
+        generated = trimmed.substring(10).trim();
       } else if (trimmed.startsWith('dependencies:')) {
-        inDependencies = true
+        inDependencies = true;
       } else if (inDependencies) {
         if (trimmed.startsWith('- path:')) {
           // Save previous dep if exists
           if (currentDep?.path && currentDep?.symbol && currentDep?.hash) {
-            dependencies.push(currentDep as DocDependency)
+            dependencies.push(currentDep as DocDependency);
           }
           // Start new dependency
           currentDep = {
             path: trimmed.substring(7).trim(),
-          }
+          };
         } else if (trimmed.startsWith('symbol:') && currentDep) {
-          currentDep.symbol = trimmed.substring(7).trim()
+          currentDep.symbol = trimmed.substring(7).trim();
         } else if (trimmed.startsWith('hash:') && currentDep) {
-          currentDep.hash = trimmed.substring(5).trim()
+          currentDep.hash = trimmed.substring(5).trim();
         } else if (trimmed.startsWith('asOf:') && currentDep) {
-          currentDep.asOf = trimmed.substring(5).trim()
+          currentDep.asOf = trimmed.substring(5).trim();
         } else if (trimmed && !trimmed.startsWith('-') && !trimmed.includes(':')) {
           // End of dependencies
-          inDependencies = false
+          inDependencies = false;
         }
       }
     }
 
     // Save last dependency
     if (currentDep?.path && currentDep?.symbol && currentDep?.hash) {
-      dependencies.push(currentDep as DocDependency)
+      dependencies.push(currentDep as DocDependency);
     }
 
-    return { title, generated, dependencies }
+    return { title, generated, dependencies };
   }
 }

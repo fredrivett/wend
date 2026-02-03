@@ -2,16 +2,16 @@
  * Tests for content hasher
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
-import type { SymbolInfo } from '../extractor/types.js'
-import { ContentHasher, hashSymbol } from './index.js'
+import { beforeEach, describe, expect, it } from 'vitest';
+import type { SymbolInfo } from '../extractor/types.js';
+import { ContentHasher, hashSymbol } from './index.js';
 
 describe('ContentHasher', () => {
-  let hasher: ContentHasher
+  let hasher: ContentHasher;
 
   beforeEach(() => {
-    hasher = new ContentHasher()
-  })
+    hasher = new ContentHasher();
+  });
 
   describe('hashSymbol', () => {
     it('should produce consistent hash for same content', () => {
@@ -24,14 +24,14 @@ describe('ContentHasher', () => {
         fullText: 'function testFunc(a: number, b: number) { return a + b }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
-      const hash1 = hasher.hashSymbol(symbol)
-      const hash2 = hasher.hashSymbol(symbol)
+      const hash1 = hasher.hashSymbol(symbol);
+      const hash2 = hasher.hashSymbol(symbol);
 
-      expect(hash1).toBe(hash2)
-      expect(hash1).toHaveLength(64) // SHA256 produces 64 hex chars
-    })
+      expect(hash1).toBe(hash2);
+      expect(hash1).toHaveLength(64); // SHA256 produces 64 hex chars
+    });
 
     it('should produce same hash for renamed function', () => {
       const symbol1: SymbolInfo = {
@@ -43,7 +43,7 @@ describe('ContentHasher', () => {
         fullText: 'function add(a: number, b: number) { return a + b }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         name: 'sum', // Different name
@@ -54,10 +54,10 @@ describe('ContentHasher', () => {
         fullText: 'function sum(a: number, b: number) { return a + b }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
-      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2))
-    })
+      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2));
+    });
 
     it('should produce different hash when params change', () => {
       const symbol1: SymbolInfo = {
@@ -69,7 +69,7 @@ describe('ContentHasher', () => {
         fullText: 'function func(a: number) { return a }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         name: 'func',
@@ -80,10 +80,10 @@ describe('ContentHasher', () => {
         fullText: 'function func(a: number, b: number) { return a }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
-      expect(hasher.hashSymbol(symbol1)).not.toBe(hasher.hashSymbol(symbol2))
-    })
+      expect(hasher.hashSymbol(symbol1)).not.toBe(hasher.hashSymbol(symbol2));
+    });
 
     it('should produce different hash when body changes', () => {
       const symbol1: SymbolInfo = {
@@ -95,7 +95,7 @@ describe('ContentHasher', () => {
         fullText: 'function func(a: number) { return a }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         name: 'func',
@@ -106,10 +106,10 @@ describe('ContentHasher', () => {
         fullText: 'function func(a: number) { return a * 2 }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
-      expect(hasher.hashSymbol(symbol1)).not.toBe(hasher.hashSymbol(symbol2))
-    })
+      expect(hasher.hashSymbol(symbol1)).not.toBe(hasher.hashSymbol(symbol2));
+    });
 
     it('should ignore file path in hash', () => {
       const symbol1: SymbolInfo = {
@@ -121,7 +121,7 @@ describe('ContentHasher', () => {
         fullText: 'function func(a: number) { return a }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         name: 'func',
@@ -132,10 +132,10 @@ describe('ContentHasher', () => {
         fullText: 'function func(a: number) { return a }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
-      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2))
-    })
+      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2));
+    });
 
     it('should ignore line numbers in hash', () => {
       const symbol1: SymbolInfo = {
@@ -147,7 +147,7 @@ describe('ContentHasher', () => {
         fullText: 'function func(a: number) { return a }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         name: 'func',
@@ -158,11 +158,11 @@ describe('ContentHasher', () => {
         fullText: 'function func(a: number) { return a }',
         startLine: 100, // Different line numbers
         endLine: 102,
-      }
+      };
 
-      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2))
-    })
-  })
+      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2));
+    });
+  });
 
   describe('normalizeWhitespace', () => {
     it('should normalize multiple spaces to single space', () => {
@@ -175,17 +175,17 @@ describe('ContentHasher', () => {
         fullText: 'test',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         ...symbol,
         params: 'a: number, b: number',
         body: '{ return a + b }',
-      }
+      };
 
       // Should produce same hash after normalization
-      expect(hasher.hashSymbol(symbol)).toBe(hasher.hashSymbol(symbol2))
-    })
+      expect(hasher.hashSymbol(symbol)).toBe(hasher.hashSymbol(symbol2));
+    });
 
     it('should normalize line endings', () => {
       const symbol1: SymbolInfo = {
@@ -197,15 +197,15 @@ describe('ContentHasher', () => {
         fullText: 'test',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         ...symbol1,
         body: '{\r\n  return a\r\n}', // Windows line endings
-      }
+      };
 
-      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2))
-    })
+      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2));
+    });
 
     it('should normalize tabs to spaces', () => {
       const symbol1: SymbolInfo = {
@@ -217,16 +217,16 @@ describe('ContentHasher', () => {
         fullText: 'test',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         ...symbol1,
         body: '{\n  return a\n}', // Space indentation
-      }
+      };
 
-      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2))
-    })
-  })
+      expect(hasher.hashSymbol(symbol1)).toBe(hasher.hashSymbol(symbol2));
+    });
+  });
 
   describe('hasChanged', () => {
     it('should detect no change for identical symbols', () => {
@@ -239,10 +239,10 @@ describe('ContentHasher', () => {
         fullText: 'function func(a: number) { return a }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
-      expect(hasher.hasChanged(symbol, symbol)).toBe(false)
-    })
+      expect(hasher.hasChanged(symbol, symbol)).toBe(false);
+    });
 
     it('should detect no change when only name changes', () => {
       const symbol1: SymbolInfo = {
@@ -254,15 +254,15 @@ describe('ContentHasher', () => {
         fullText: 'function oldName(a: number) { return a }',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         ...symbol1,
         name: 'newName',
-      }
+      };
 
-      expect(hasher.hasChanged(symbol1, symbol2)).toBe(false)
-    })
+      expect(hasher.hasChanged(symbol1, symbol2)).toBe(false);
+    });
 
     it('should detect change when params change', () => {
       const symbol1: SymbolInfo = {
@@ -274,15 +274,15 @@ describe('ContentHasher', () => {
         fullText: 'test',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         ...symbol1,
         params: 'a: number, b: number',
-      }
+      };
 
-      expect(hasher.hasChanged(symbol1, symbol2)).toBe(true)
-    })
+      expect(hasher.hasChanged(symbol1, symbol2)).toBe(true);
+    });
 
     it('should detect change when body changes', () => {
       const symbol1: SymbolInfo = {
@@ -294,24 +294,24 @@ describe('ContentHasher', () => {
         fullText: 'test',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
       const symbol2: SymbolInfo = {
         ...symbol1,
         body: '{ return a * 2 }',
-      }
+      };
 
-      expect(hasher.hasChanged(symbol1, symbol2)).toBe(true)
-    })
-  })
+      expect(hasher.hasChanged(symbol1, symbol2)).toBe(true);
+    });
+  });
 
   describe('shortHash', () => {
     it('should return first 8 characters of hash', () => {
-      const hash = 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
-      expect(hasher.shortHash(hash)).toBe('abcdef12')
-      expect(hasher.shortHash(hash)).toHaveLength(8)
-    })
-  })
+      const hash = 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
+      expect(hasher.shortHash(hash)).toBe('abcdef12');
+      expect(hasher.shortHash(hash)).toHaveLength(8);
+    });
+  });
 
   describe('hashSymbol convenience function', () => {
     it('should work as standalone function', () => {
@@ -324,13 +324,13 @@ describe('ContentHasher', () => {
         fullText: 'test',
         startLine: 1,
         endLine: 3,
-      }
+      };
 
-      const hash = hashSymbol(symbol)
-      expect(hash).toHaveLength(64)
-      expect(typeof hash).toBe('string')
-    })
-  })
+      const hash = hashSymbol(symbol);
+      expect(hash).toHaveLength(64);
+      expect(typeof hash).toBe('string');
+    });
+  });
 
   describe('Real-world scenarios', () => {
     it('should handle complex TypeScript function', () => {
@@ -352,22 +352,22 @@ describe('ContentHasher', () => {
         fullText: 'test',
         startLine: 10,
         endLine: 20,
-      }
+      };
 
-      const hash = hasher.hashSymbol(symbol)
-      expect(hash).toHaveLength(64)
+      const hash = hasher.hashSymbol(symbol);
+      expect(hash).toHaveLength(64);
 
       // Same function with different formatting should have same hash
       const reformatted: SymbolInfo = {
         ...symbol,
         body: `{const filtered=options?.filter?data.filter(item=>item.value>0):data
 return filtered.map(item=>({...item,processed:true}))}`,
-      }
+      };
 
       // Note: Due to whitespace normalization, these should be similar but not identical
       // because we only normalize simple cases
-      expect(hasher.hashSymbol(reformatted)).toBeDefined()
-    })
+      expect(hasher.hashSymbol(reformatted)).toBeDefined();
+    });
 
     it('should handle async functions', () => {
       const symbol: SymbolInfo = {
@@ -382,11 +382,11 @@ return filtered.map(item=>({...item,processed:true}))}`,
         fullText: 'test',
         startLine: 1,
         endLine: 4,
-      }
+      };
 
-      expect(() => hasher.hashSymbol(symbol)).not.toThrow()
-      expect(hasher.hashSymbol(symbol)).toHaveLength(64)
-    })
+      expect(() => hasher.hashSymbol(symbol)).not.toThrow();
+      expect(hasher.hashSymbol(symbol)).toHaveLength(64);
+    });
 
     it('should handle class methods', () => {
       const symbol: SymbolInfo = {
@@ -408,10 +408,10 @@ return filtered.map(item=>({...item,processed:true}))}`,
         fullText: 'test',
         startLine: 1,
         endLine: 12,
-      }
+      };
 
-      expect(() => hasher.hashSymbol(symbol)).not.toThrow()
-      expect(hasher.hashSymbol(symbol)).toHaveLength(64)
-    })
-  })
-})
+      expect(() => hasher.hashSymbol(symbol)).not.toThrow();
+      expect(hasher.hashSymbol(symbol)).toHaveLength(64);
+    });
+  });
+});

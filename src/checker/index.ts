@@ -2,22 +2,22 @@
  * Staleness checker - detects when docs are out of sync with code
  */
 
-import { existsSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
-import { TypeScriptExtractor } from '../extractor/index.js'
-import { ContentHasher } from '../hasher/index.js'
-import { DocParser } from './doc-parser.js'
-import type { CheckResult, StaleDependency, StaleDoc } from './types.js'
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { TypeScriptExtractor } from '../extractor/index.js';
+import { ContentHasher } from '../hasher/index.js';
+import { DocParser } from './doc-parser.js';
+import type { CheckResult, StaleDependency, StaleDoc } from './types.js';
 
 export class StaleChecker {
-  private extractor: TypeScriptExtractor
-  private hasher: ContentHasher
-  private parser: DocParser
+  private extractor: TypeScriptExtractor;
+  private hasher: ContentHasher;
+  private parser: DocParser;
 
   constructor() {
-    this.extractor = new TypeScriptExtractor()
-    this.hasher = new ContentHasher()
-    this.parser = new DocParser()
+    this.extractor = new TypeScriptExtractor();
+    this.hasher = new ContentHasher();
+    this.parser = new DocParser();
   }
 
   /**
@@ -29,33 +29,33 @@ export class StaleChecker {
       staleDocs: [],
       upToDate: [],
       errors: [],
-    }
+    };
 
     if (!existsSync(docsDir)) {
-      result.errors.push(`Docs directory not found: ${docsDir}`)
-      return result
+      result.errors.push(`Docs directory not found: ${docsDir}`);
+      return result;
     }
 
     // Find all markdown files recursively
-    const docFiles = this.findMarkdownFiles(docsDir)
-    result.totalDocs = docFiles.length
+    const docFiles = this.findMarkdownFiles(docsDir);
+    result.totalDocs = docFiles.length;
 
     for (const docPath of docFiles) {
       try {
-        const staleInfo = this.checkDoc(docPath)
+        const staleInfo = this.checkDoc(docPath);
         if (staleInfo) {
-          result.staleDocs.push(staleInfo)
+          result.staleDocs.push(staleInfo);
         } else {
-          result.upToDate.push(docPath)
+          result.upToDate.push(docPath);
         }
       } catch (error) {
         result.errors.push(
           `Error checking ${docPath}: ${error instanceof Error ? error.message : String(error)}`,
-        )
+        );
       }
     }
 
-    return result
+    return result;
   }
 
   /**
@@ -63,8 +63,8 @@ export class StaleChecker {
    * Returns StaleDoc if stale, null if up to date
    */
   checkDoc(docPath: string): StaleDoc | null {
-    const metadata = this.parser.parseDocFile(docPath)
-    const staleDeps: StaleDependency[] = []
+    const metadata = this.parser.parseDocFile(docPath);
+    const staleDeps: StaleDependency[] = [];
 
     for (const dep of metadata.dependencies) {
       // Check if source file exists
@@ -75,12 +75,12 @@ export class StaleChecker {
           oldHash: dep.hash,
           newHash: '',
           reason: 'file-not-found',
-        })
-        continue
+        });
+        continue;
       }
 
       // Extract current symbol
-      const currentSymbol = this.extractor.extractSymbol(dep.path, dep.symbol)
+      const currentSymbol = this.extractor.extractSymbol(dep.path, dep.symbol);
 
       if (!currentSymbol) {
         staleDeps.push({
@@ -89,12 +89,12 @@ export class StaleChecker {
           oldHash: dep.hash,
           newHash: '',
           reason: 'not-found',
-        })
-        continue
+        });
+        continue;
       }
 
       // Hash current symbol
-      const currentHash = this.hasher.hashSymbol(currentSymbol)
+      const currentHash = this.hasher.hashSymbol(currentSymbol);
 
       // Compare hashes
       if (currentHash !== dep.hash) {
@@ -104,7 +104,7 @@ export class StaleChecker {
           oldHash: dep.hash,
           newHash: currentHash,
           reason: 'changed',
-        })
+        });
       }
     }
 
@@ -113,35 +113,35 @@ export class StaleChecker {
         docPath,
         reason: this.formatStaleReason(staleDeps),
         staleDependencies: staleDeps,
-      }
+      };
     }
 
-    return null
+    return null;
   }
 
   /**
    * Find all markdown files in a directory recursively
    */
   private findMarkdownFiles(dir: string): string[] {
-    const files: string[] = []
+    const files: string[] = [];
 
-    const items = readdirSync(dir)
+    const items = readdirSync(dir);
     for (const item of items) {
-      const fullPath = join(dir, item)
-      const stat = statSync(fullPath)
+      const fullPath = join(dir, item);
+      const stat = statSync(fullPath);
 
       if (stat.isDirectory()) {
         // Skip certain directories
         if (item === 'node_modules' || item === '.git') {
-          continue
+          continue;
         }
-        files.push(...this.findMarkdownFiles(fullPath))
+        files.push(...this.findMarkdownFiles(fullPath));
       } else if (item.endsWith('.md')) {
-        files.push(fullPath)
+        files.push(fullPath);
       }
     }
 
-    return files
+    return files;
   }
 
   /**
@@ -151,17 +151,17 @@ export class StaleChecker {
     const reasons = staleDeps.map((dep) => {
       switch (dep.reason) {
         case 'changed':
-          return `${dep.path}:${dep.symbol} changed`
+          return `${dep.path}:${dep.symbol} changed`;
         case 'not-found':
-          return `${dep.path}:${dep.symbol} not found`
+          return `${dep.path}:${dep.symbol} not found`;
         case 'file-not-found':
-          return `${dep.path} not found`
+          return `${dep.path} not found`;
       }
-    })
+    });
 
-    return reasons.join(', ')
+    return reasons.join(', ');
   }
 }
 
-export { DocParser } from './doc-parser.js'
-export * from './types.js'
+export { DocParser } from './doc-parser.js';
+export * from './types.js';

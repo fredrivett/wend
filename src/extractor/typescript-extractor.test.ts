@@ -2,33 +2,33 @@
  * Tests for TypeScript/JavaScript symbol extractor
  */
 
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { TypeScriptExtractor } from './typescript-extractor.js'
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { TypeScriptExtractor } from './typescript-extractor.js';
 
-const TEST_DIR = join(process.cwd(), '.test-tmp')
-const TEST_FILE = join(TEST_DIR, 'test.ts')
+const TEST_DIR = join(process.cwd(), '.test-tmp');
+const TEST_FILE = join(TEST_DIR, 'test.ts');
 
 describe('TypeScriptExtractor', () => {
-  let extractor: TypeScriptExtractor
+  let extractor: TypeScriptExtractor;
 
   beforeEach(() => {
-    extractor = new TypeScriptExtractor()
+    extractor = new TypeScriptExtractor();
     if (!existsSync(TEST_DIR)) {
-      mkdirSync(TEST_DIR, { recursive: true })
+      mkdirSync(TEST_DIR, { recursive: true });
     }
-  })
+  });
 
   afterEach(() => {
     try {
       if (existsSync(TEST_FILE)) {
-        unlinkSync(TEST_FILE)
+        unlinkSync(TEST_FILE);
       }
     } catch (e) {
       // Ignore cleanup errors
     }
-  })
+  });
 
   describe('Function Declarations', () => {
     it('should extract basic function declaration', () => {
@@ -36,19 +36,19 @@ describe('TypeScriptExtractor', () => {
 function add(a: number, b: number): number {
   return a + b
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
+      expect(result.symbols).toHaveLength(1);
       expect(result.symbols[0]).toMatchObject({
         name: 'add',
         kind: 'function',
         params: 'a: number, b: number',
-      })
-      expect(result.symbols[0].body).toContain('return a + b')
-    })
+      });
+      expect(result.symbols[0].body).toContain('return a + b');
+    });
 
     it('should extract async function', () => {
       const code = `
@@ -56,49 +56,49 @@ async function fetchData(url: string) {
   const response = await fetch(url)
   return response.json()
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
+      expect(result.symbols).toHaveLength(1);
       expect(result.symbols[0]).toMatchObject({
         name: 'fetchData',
         kind: 'function',
         params: 'url: string',
-      })
-    })
+      });
+    });
 
     it('should extract exported function', () => {
       const code = `
 export function greet(name: string): string {
   return \`Hello, \${name}!\`
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
-      expect(result.symbols[0].name).toBe('greet')
-    })
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].name).toBe('greet');
+    });
 
     it('should extract function with no parameters', () => {
       const code = `
 function getCurrentTime() {
   return Date.now()
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
+      expect(result.symbols).toHaveLength(1);
       expect(result.symbols[0]).toMatchObject({
         name: 'getCurrentTime',
         params: '',
-      })
-    })
+      });
+    });
 
     it('should extract function with complex parameters', () => {
       const code = `
@@ -108,16 +108,16 @@ function process(
 ): Promise<void> {
   // processing
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
-      expect(result.symbols[0].params).toContain('data: string[]')
-      expect(result.symbols[0].params).toContain('options')
-    })
-  })
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].params).toContain('data: string[]');
+      expect(result.symbols[0].params).toContain('options');
+    });
+  });
 
   describe('Arrow Functions', () => {
     it('should extract const arrow function', () => {
@@ -125,38 +125,38 @@ function process(
 const multiply = (a: number, b: number) => {
   return a * b
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
+      expect(result.symbols).toHaveLength(1);
       expect(result.symbols[0]).toMatchObject({
         name: 'multiply',
         kind: 'const',
         params: 'a: number, b: number',
-      })
-      expect(result.symbols[0].body).toContain('return a * b')
-    })
+      });
+      expect(result.symbols[0].body).toContain('return a * b');
+    });
 
     it('should extract arrow function with implicit return', () => {
       const code = `
 const square = (x: number) => x * x
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
+      expect(result.symbols).toHaveLength(1);
       expect(result.symbols[0]).toMatchObject({
         name: 'square',
         kind: 'const',
         params: 'x: number',
-      })
+      });
       // Implicit return should be wrapped in block
-      expect(result.symbols[0].body).toContain('return')
-      expect(result.symbols[0].body).toContain('x * x')
-    })
+      expect(result.symbols[0].body).toContain('return');
+      expect(result.symbols[0].body).toContain('x * x');
+    });
 
     it('should extract async arrow function', () => {
       const code = `
@@ -164,30 +164,30 @@ const fetchUser = async (id: string) => {
   const response = await fetch(\`/api/users/\${id}\`)
   return response.json()
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
-      expect(result.symbols[0].name).toBe('fetchUser')
-    })
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].name).toBe('fetchUser');
+    });
 
     it('should extract arrow function with no parameters', () => {
       const code = `
 const getTimestamp = () => Date.now()
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
+      expect(result.symbols).toHaveLength(1);
       expect(result.symbols[0]).toMatchObject({
         name: 'getTimestamp',
         params: '',
-      })
-    })
-  })
+      });
+    });
+  });
 
   describe('Function Expressions', () => {
     it('should extract function expression', () => {
@@ -196,19 +196,19 @@ const divide = function(a: number, b: number): number {
   if (b === 0) throw new Error('Division by zero')
   return a / b
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
+      expect(result.symbols).toHaveLength(1);
       expect(result.symbols[0]).toMatchObject({
         name: 'divide',
         kind: 'const',
         params: 'a: number, b: number',
-      })
-    })
-  })
+      });
+    });
+  });
 
   describe('Classes', () => {
     it('should extract basic class', () => {
@@ -222,20 +222,20 @@ class Calculator {
     return a - b
   }
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
+      expect(result.symbols).toHaveLength(1);
       expect(result.symbols[0]).toMatchObject({
         name: 'Calculator',
         kind: 'class',
         params: '',
-      })
-      expect(result.symbols[0].body).toContain('add')
-      expect(result.symbols[0].body).toContain('subtract')
-    })
+      });
+      expect(result.symbols[0].body).toContain('add');
+      expect(result.symbols[0].body).toContain('subtract');
+    });
 
     it('should extract exported class', () => {
       const code = `
@@ -246,14 +246,14 @@ export class UserService {
     this.users.push(user)
   }
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
-      expect(result.symbols[0].name).toBe('UserService')
-    })
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].name).toBe('UserService');
+    });
 
     it('should extract class with constructor', () => {
       const code = `
@@ -264,16 +264,16 @@ class Person {
     return \`Hello, I'm \${this.name}\`
   }
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
-      expect(result.symbols[0].body).toContain('constructor')
-      expect(result.symbols[0].body).toContain('greet')
-    })
-  })
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].body).toContain('constructor');
+      expect(result.symbols[0].body).toContain('greet');
+    });
+  });
 
   describe('Multiple Symbols', () => {
     it('should extract all symbols from a file', () => {
@@ -291,20 +291,20 @@ class MyClass {
 export function exportedFunc() {
   return 'exported'
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(4)
+      expect(result.symbols).toHaveLength(4);
       expect(result.symbols.map((s) => s.name)).toEqual([
         'regularFunc',
         'arrowFunc',
         'MyClass',
         'exportedFunc',
-      ])
-    })
-  })
+      ]);
+    });
+  });
 
   describe('extractSymbol (single symbol)', () => {
     it('should extract specific symbol by name', () => {
@@ -312,27 +312,27 @@ export function exportedFunc() {
 function first() { return 1 }
 function second() { return 2 }
 function third() { return 3 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const symbol = extractor.extractSymbol(TEST_FILE, 'second')
+      const symbol = extractor.extractSymbol(TEST_FILE, 'second');
 
-      expect(symbol).not.toBeNull()
-      expect(symbol?.name).toBe('second')
-      expect(symbol?.body).toContain('return 2')
-    })
+      expect(symbol).not.toBeNull();
+      expect(symbol?.name).toBe('second');
+      expect(symbol?.body).toContain('return 2');
+    });
 
     it('should return null for non-existent symbol', () => {
       const code = `
 function exists() { return true }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const symbol = extractor.extractSymbol(TEST_FILE, 'doesNotExist')
+      const symbol = extractor.extractSymbol(TEST_FILE, 'doesNotExist');
 
-      expect(symbol).toBeNull()
-    })
-  })
+      expect(symbol).toBeNull();
+    });
+  });
 
   describe('Line Numbers', () => {
     it('should track correct line numbers', () => {
@@ -343,16 +343,16 @@ function myFunc() {
   return 'hello'
   // Line 6
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
-      expect(result.symbols[0].startLine).toBeGreaterThan(0)
-      expect(result.symbols[0].endLine).toBeGreaterThan(result.symbols[0].startLine)
-    })
-  })
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].startLine).toBeGreaterThan(0);
+      expect(result.symbols[0].endLine).toBeGreaterThan(result.symbols[0].startLine);
+    });
+  });
 
   describe('Error Handling', () => {
     it('should handle file with syntax errors gracefully', () => {
@@ -361,22 +361,22 @@ function broken( {
   // Syntax error: missing closing paren
   return 'oops'
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
       // Should not throw, but might return empty or partial results
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toBeDefined()
-      expect(Array.isArray(result.symbols)).toBe(true)
-    })
+      expect(result.symbols).toBeDefined();
+      expect(Array.isArray(result.symbols)).toBe(true);
+    });
 
     it('should throw ExtractionError for non-existent file', () => {
       expect(() => {
-        extractor.extractSymbols('/non/existent/file.ts')
-      }).toThrow()
-    })
-  })
+        extractor.extractSymbols('/non/existent/file.ts');
+      }).toThrow();
+    });
+  });
 
   describe('Real-world Examples', () => {
     it('should extract from complex real-world code', () => {
@@ -405,16 +405,16 @@ export function formatCurrency(amount: number, currency: string = 'USD'): string
     currency,
   }).format(amount)
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(2)
-      expect(result.symbols[0].name).toBe('useDebounce')
-      expect(result.symbols[1].name).toBe('formatCurrency')
-    })
-  })
+      expect(result.symbols).toHaveLength(2);
+      expect(result.symbols[0].name).toBe('useDebounce');
+      expect(result.symbols[1].name).toBe('formatCurrency');
+    });
+  });
 
   describe('TypeScript-specific Features', () => {
     it('should handle generic functions', () => {
@@ -422,27 +422,27 @@ export function formatCurrency(amount: number, currency: string = 'USD'): string
 function identity<T>(arg: T): T {
   return arg
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
-      expect(result.symbols[0].name).toBe('identity')
-    })
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].name).toBe('identity');
+    });
 
     it('should handle type annotations', () => {
       const code = `
 const processUser = (user: { id: string; name: string }): string => {
   return user.name
 }
-`
-      writeFileSync(TEST_FILE, code)
+`;
+      writeFileSync(TEST_FILE, code);
 
-      const result = extractor.extractSymbols(TEST_FILE)
+      const result = extractor.extractSymbols(TEST_FILE);
 
-      expect(result.symbols).toHaveLength(1)
-      expect(result.symbols[0].params).toContain('user')
-    })
-  })
-})
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].params).toContain('user');
+    });
+  });
+});
