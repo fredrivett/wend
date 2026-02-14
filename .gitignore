@@ -12,3 +12,6 @@ dist/
 
 # Test artifacts
 .test-*
+
+# Internal spec (local only)
+.internal_spec/
