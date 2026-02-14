@@ -4,6 +4,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { toRelativePath } from '../cli/utils/paths.js';
 import { TypeScriptExtractor } from '../extractor/index.js';
 import type { SymbolInfo } from '../extractor/types.js';
 import { ContentHasher } from '../hasher/index.js';
@@ -91,10 +92,10 @@ export class Generator {
       customPrompt,
     });
 
-    // Create dependency entry with hash
+    // Create dependency entry with hash (using relative paths for portability)
     const dependencies: DocDependency[] = [
       {
-        path: symbol.filePath,
+        path: toRelativePath(symbol.filePath),
         symbol: symbol.name,
         hash: this.hasher.hashSymbol(symbol),
       },
@@ -104,7 +105,7 @@ export class Generator {
     if (context?.relatedSymbols) {
       for (const relatedSymbol of context.relatedSymbols) {
         dependencies.push({
-          path: relatedSymbol.filePath,
+          path: toRelativePath(relatedSymbol.filePath),
           symbol: relatedSymbol.name,
           hash: this.hasher.hashSymbol(relatedSymbol),
         });
@@ -171,13 +172,7 @@ export class Generator {
    * Generate file path for a symbol, preserving directory structure
    */
   private generateFilePath(symbol: SymbolInfo, fileName: string): string {
-    const cwd = process.cwd();
-
-    // Get relative path from project root to source file
-    let relativePath = symbol.filePath;
-    if (symbol.filePath.startsWith(cwd)) {
-      relativePath = symbol.filePath.substring(cwd.length + 1);
-    }
+    const relativePath = toRelativePath(symbol.filePath);
 
     // Get directory path (without filename)
     const dirPath = dirname(relativePath);

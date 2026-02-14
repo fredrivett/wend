@@ -90,8 +90,8 @@ describe('Generator', () => {
       expect(content).toContain('generated:');
       expect(content).toContain('dependencies:');
 
-      // Should have dependency with hash
-      expect(content).toContain(`path: ${symbol.filePath}`);
+      // Should have dependency with relative path and hash
+      expect(content).toContain('path: .test-generator/src/utils.ts');
       expect(content).toContain('symbol: myFunc');
       expect(content).toContain('hash:');
 
@@ -181,8 +181,8 @@ describe('Generator', () => {
       // Should have both dependencies
       expect(content).toContain('symbol: processData');
       expect(content).toContain('symbol: transform');
-      expect(content).toContain(mainSymbol.filePath);
-      expect(content).toContain(relatedSymbol.filePath);
+      expect(content).toContain('path: .test-generator/src/processor.ts');
+      expect(content).toContain('path: .test-generator/src/utils.ts');
     });
 
     it('should handle generation errors gracefully', async () => {

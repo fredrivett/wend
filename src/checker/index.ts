@@ -4,6 +4,7 @@
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolveSourcePath } from '../cli/utils/paths.js';
 import { TypeScriptExtractor } from '../extractor/index.js';
 import { ContentHasher } from '../hasher/index.js';
 import { DocParser } from './doc-parser.js';
@@ -67,8 +68,11 @@ export class StaleChecker {
     const staleDeps: StaleDependency[] = [];
 
     for (const dep of metadata.dependencies) {
+      // Resolve paths (handles relative paths and foreign worktree paths)
+      const depPath = resolveSourcePath(dep.path);
+
       // Check if source file exists
-      if (!existsSync(dep.path)) {
+      if (!existsSync(depPath)) {
         staleDeps.push({
           path: dep.path,
           symbol: dep.symbol,
@@ -80,7 +84,7 @@ export class StaleChecker {
       }
 
       // Extract current symbol
-      const currentSymbol = this.extractor.extractSymbol(dep.path, dep.symbol);
+      const currentSymbol = this.extractor.extractSymbol(depPath, dep.symbol);
 
       if (!currentSymbol) {
         staleDeps.push({

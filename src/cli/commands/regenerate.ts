@@ -4,6 +4,7 @@ import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
 import { TypeScriptExtractor } from '../../extractor/index.js';
 import { Generator } from '../../generator/index.js';
+import { resolveSourcePath } from '../utils/paths.js';
 
 interface RegenerateOptions {
   style?: 'technical' | 'beginner-friendly' | 'comprehensive';
@@ -92,16 +93,17 @@ export function registerRegenerateCommand(cli: CAC) {
 
         for (const doc of docs) {
           completed++;
-          spinner.message(`[${completed}/${docs.length}] Regenerating ${doc.symbolName} from ${doc.filePath}`);
+          const resolvedPath = resolveSourcePath(doc.filePath);
+          spinner.message(`[${completed}/${docs.length}] Regenerating ${doc.symbolName} from ${resolvedPath}`);
 
           // Check if source file still exists
-          if (!existsSync(doc.filePath)) {
-            results.push(`  ⚠ ${doc.symbolName}: Source file not found (${doc.filePath})`);
+          if (!existsSync(resolvedPath)) {
+            results.push(`  ⚠ ${doc.symbolName}: Source file not found (${resolvedPath})`);
             continue;
           }
 
           // Extract symbol
-          const symbol = extractor.extractSymbol(doc.filePath, doc.symbolName);
+          const symbol = extractor.extractSymbol(resolvedPath, doc.symbolName);
           if (!symbol) {
             results.push(`  ⚠ ${doc.symbolName}: Symbol not found in ${doc.filePath}`);
             continue;

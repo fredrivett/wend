@@ -1,26 +1,26 @@
 ---
 title: hashSymbol
-generated: 2026-02-03T11:46:20.441Z
+generated: 2026-02-14T14:18:14.412Z
 dependencies:
-  - path: /Users/fredrivett/code/FR/syncdocs/src/hasher/index.ts
+  - path: src/hasher/index.ts
     symbol: hashSymbol
     hash: 9f17b3c67367f0748d4df2c54b67789b4bd36f3a8d20c2952d1002744da0b0e6
 ---
 # hashSymbol
 
-Computes a hash string for a given symbol using the `ContentHasher` class. This function provides a convenient wrapper for generating consistent hash values from `SymbolInfo` objects.
+The `hashSymbol` function generates a hash string for a given `SymbolInfo` object. It creates a `ContentHasher` instance and delegates the hashing operation to compute a consistent string representation of the symbol's content.
 
 <details>
 <summary>Parameters</summary>
 
-- `symbol` (`SymbolInfo`): The symbol information object to be hashed. Contains the symbol data that will be used to generate the hash value.
+- `symbol` (`SymbolInfo`): The symbol information object to be hashed. Contains metadata and properties that uniquely identify a symbol in the codebase.
 
 </details>
 
 <details>
 <summary>Return Value</summary>
 
-Returns a `string` representing the computed hash of the provided `SymbolInfo` object. The exact format and length of the hash depend on the underlying `ContentHasher` implementation.
+Returns a `string` representing the computed hash of the provided `SymbolInfo` object. The hash is deterministic and will produce the same result for identical symbol information.
 
 </details>
 
@@ -28,34 +28,29 @@ Returns a `string` representing the computed hash of the provided `SymbolInfo` o
 <summary>Usage Examples</summary>
 
 ```typescript
-import { hashSymbol } from './symbol-utils';
+import { hashSymbol } from './hash-utils';
 
-// Hash a symbol info object
-const symbolInfo: SymbolInfo = {
-  name: 'myFunction',
+// Hash a function symbol
+const functionSymbol: SymbolInfo = {
+  name: 'calculateTotal',
   type: 'function',
   // ... other symbol properties
 };
+const hash1 = hashSymbol(functionSymbol);
+console.log(hash1); // "a1b2c3d4e5f6..."
 
-const hash = hashSymbol(symbolInfo);
-console.log(hash); // Output: computed hash string
-```
+// Hash a class symbol
+const classSymbol: SymbolInfo = {
+  name: 'UserService',
+  type: 'class',
+  // ... other symbol properties
+};
+const hash2 = hashSymbol(classSymbol);
+console.log(hash2); // "f6e5d4c3b2a1..."
 
-```typescript
-// Use in a symbol comparison scenario
-const symbol1Hash = hashSymbol(firstSymbol);
-const symbol2Hash = hashSymbol(secondSymbol);
-
-if (symbol1Hash === symbol2Hash) {
-  console.log('Symbols are equivalent');
-}
-```
-
-```typescript
-// Cache symbols by hash
-const symbolCache = new Map<string, SymbolInfo>();
-const hash = hashSymbol(symbol);
-symbolCache.set(hash, symbol);
+// Multiple calls with same symbol produce identical hashes
+const duplicateHash = hashSymbol(functionSymbol);
+console.log(hash1 === duplicateHash); // true
 ```
 
 </details>
@@ -63,31 +58,44 @@ symbolCache.set(hash, symbol);
 <details>
 <summary>Implementation Details</summary>
 
-The function creates a new instance of `ContentHasher` and delegates the actual hashing operation to its `hashSymbol` method. This design provides:
+The function serves as a lightweight wrapper around the `ContentHasher` class. It instantiates a new `ContentHasher` object for each call and immediately delegates the hashing operation to the `hashSymbol` method of that instance. This design provides a clean, functional interface while leveraging the more complex hashing logic encapsulated within the `ContentHasher` class.
 
-- Encapsulation of the hashing logic within the `ContentHasher` class
-- A simple, stateless function interface for consumers
-- Consistent hash generation across different parts of the application
-
-The function follows a factory pattern where each call creates a fresh `ContentHasher` instance, ensuring no state pollution between hash operations.
+The actual hashing algorithm and symbol processing logic are handled entirely by the `ContentHasher.hashSymbol()` method, making this function a simple factory pattern implementation.
 
 </details>
 
 <details>
 <summary>Edge Cases</summary>
 
-- **Null/undefined symbol**: Behavior depends on the `ContentHasher.hashSymbol()` implementation - may throw an error or return a default hash
-- **Empty `SymbolInfo` objects**: Will still generate a hash, but the value may be a default or minimal hash representation
-- **Large symbol objects**: Hash computation time may vary based on the complexity and size of the `SymbolInfo` data
-- **Identical symbols**: Should always produce the same hash value for deterministic behavior
+- **Null/Undefined Symbol**: If `null` or `undefined` is passed as the `symbol` parameter, the behavior depends on the `ContentHasher.hashSymbol()` implementation
+- **Empty Symbol**: Symbols with minimal or empty properties may still produce valid hashes, depending on the hashing strategy used by `ContentHasher`
+- **Large Symbols**: Complex symbols with extensive metadata should hash successfully, but performance may vary based on the symbol's size and complexity
+- **Symbol Mutations**: Modifying the `symbol` object after hashing will not affect the previously computed hash, as the hash represents a snapshot of the symbol's state at the time of computation
 
 </details>
 
 <details>
 <summary>Related</summary>
 
-- `ContentHasher` - The underlying class that performs the actual hash computation
-- `SymbolInfo` - The type interface that defines the structure of symbol objects being hashed
-- Hash-based symbol comparison and caching utilities
+- `ContentHasher` - The underlying class that performs the actual hashing logic
+- `ContentHasher.hashSymbol()` - The method that handles the core symbol hashing implementation
+- `SymbolInfo` - The type definition for symbol objects that can be hashed
+
+</details>
+
+<details>
+<summary>Visual Flow</summary>
+
+```mermaid
+flowchart TD
+    A[hashSymbol called] --> B[Create new ContentHasher instance]
+    B --> C[Call hasher.hashSymbol with symbol parameter]
+    C --> D[ContentHasher processes SymbolInfo]
+    D --> E[Hash computation completed]
+    E --> F[Return hash string]
+    
+    C -.-> G[Error in ContentHasher.hashSymbol]
+    G -.-> H[Exception propagated to caller]
+```
 
 </details>
