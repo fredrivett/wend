@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
 import { DocParser } from '../../checker/doc-parser.js';
@@ -75,7 +75,7 @@ export function registerStatusCommand(cli: CAC) {
           }
         }
 
-        spinner.stop('Analysis complete');
+        spinner.stop('✅ Analysis complete');
 
         // Calculate coverage (doc paths are relative, source paths are absolute)
         const totalSymbols = allSymbols.length;
@@ -103,6 +103,38 @@ export function registerStatusCommand(cli: CAC) {
             `${coverageColor} Coverage: ${bar} ${coverage}%`,
           ].join('\n'),
         );
+
+        // Suggest next file to document (most imported undocumented file)
+        if (undocumented > 0) {
+          const importCounts = countImports(sourceFiles);
+          const undocumentedByFile = new Map<string, number>();
+          for (const { file, symbol } of allSymbols) {
+            const rel = getRelativePath(file);
+            if (!documentedSymbols.has(`${rel}:${symbol.name}`)) {
+              undocumentedByFile.set(rel, (undocumentedByFile.get(rel) || 0) + 1);
+            }
+          }
+
+          // Score each file: primary sort by import count (desc), tiebreak by undocumented symbols (desc)
+          const candidates = [...undocumentedByFile.entries()]
+            .map(([file, symbolCount]) => ({
+              file,
+              symbolCount,
+              importCount: importCounts.get(file) || 0,
+            }))
+            .sort((a, b) => b.importCount - a.importCount || b.symbolCount - a.symbolCount);
+
+          if (candidates.length > 0) {
+            const next = candidates[0];
+            const importNote = next.importCount > 0
+              ? `imported by ${next.importCount} file${next.importCount === 1 ? '' : 's'}, `
+              : '';
+            p.note(
+              `\x1b[0m\x1b[1;36msyncdocs generate ${next.file}\x1b[0m\x1b[2;90m\n\n${importNote}${next.symbolCount} undocumented symbol${next.symbolCount === 1 ? '' : 's'}`,
+              '👉 Next up',
+            );
+          }
+        }
 
         // Show undocumented symbols if verbose or if there are undocumented symbols
         if (undocumented > 0 && (options.verbose || undocumented <= 20)) {
@@ -229,6 +261,72 @@ function findMarkdownFiles(dir: string): string[] {
 function getRelativePath(absolutePath: string): string {
   const cwd = process.cwd();
   return absolutePath.startsWith(cwd) ? absolutePath.substring(cwd.length + 1) : absolutePath;
+}
+
+/**
+ * Count how many files import each source file (fan-in).
+ * Returns a map of relative file path → number of importers.
+ */
+function countImports(sourceFiles: string[]): Map<string, number> {
+  const importCounts = new Map<string, number>();
+  const importPattern = /(?:import|export)\s+.*?from\s+['"]([^'"]+)['"]/g;
+
+  for (const file of sourceFiles) {
+    try {
+      const content = readFileSync(file, 'utf-8');
+      let match: RegExpExecArray | null;
+
+      while ((match = importPattern.exec(content)) !== null) {
+        const specifier = match[1];
+
+        // Only count relative imports (skip node_modules / bare specifiers)
+        if (!specifier.startsWith('.')) continue;
+
+        // Resolve to absolute path, try common extensions
+        const dir = dirname(file);
+        const resolved = resolveImport(dir, specifier, sourceFiles);
+        if (resolved) {
+          const rel = getRelativePath(resolved);
+          importCounts.set(rel, (importCounts.get(rel) || 0) + 1);
+        }
+      }
+    } catch {
+      // Skip unreadable files
+    }
+  }
+
+  return importCounts;
+}
+
+/**
+ * Resolve a relative import specifier to an absolute source file path.
+ */
+function resolveImport(fromDir: string, specifier: string, sourceFiles: string[]): string | null {
+  const base = resolve(fromDir, specifier);
+
+  // Try exact match first (already has extension)
+  if (sourceFiles.includes(base)) return base;
+
+  // Strip .js/.jsx extension (TS projects import .js but source is .ts)
+  const stripped = base.replace(/\.[jt]sx?$/, '');
+
+  // Try common extensions
+  const extensions = ['.ts', '.tsx', '.js', '.jsx'];
+  for (const ext of extensions) {
+    if (sourceFiles.includes(stripped + ext)) return stripped + ext;
+  }
+
+  // Try index files (import from directory)
+  for (const ext of extensions) {
+    const indexPath = join(base, `index${ext}`);
+    if (sourceFiles.includes(indexPath)) return indexPath;
+  }
+  for (const ext of extensions) {
+    const indexPath = join(stripped, `index${ext}`);
+    if (sourceFiles.includes(indexPath)) return indexPath;
+  }
+
+  return null;
 }
 
 function loadConfig(): {
