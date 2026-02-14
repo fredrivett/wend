@@ -261,7 +261,9 @@ export class Generator {
     if (options.symbolName) {
       const symbol = this.extractor.extractSymbol(filePath, options.symbolName);
       if (!symbol) {
-        return [{ success: false, error: `Symbol "${options.symbolName}" not found in ${filePath}` }];
+        return [
+          { success: false, error: `Symbol "${options.symbolName}" not found in ${filePath}` },
+        ];
       }
       rawTargets = [symbol];
     } else {
@@ -301,10 +303,14 @@ export class Generator {
 
     const totalCount = targetSymbols.length + uniqueCallees.length;
     const allNames = [...targetSymbols, ...uniqueCallees].map((s) => s.name).join(', ');
-    const breakdown = uniqueCallees.length > 0
-      ? ` (${targetSymbols.length} target${targetSymbols.length === 1 ? '' : 's'}, ${uniqueCallees.length} callee${uniqueCallees.length === 1 ? '' : 's'})`
-      : '';
-    progress(`Found ${totalCount} symbol${totalCount === 1 ? '' : 's'}${breakdown}: ${allNames}`, 'info');
+    const breakdown =
+      uniqueCallees.length > 0
+        ? ` (${targetSymbols.length} target${targetSymbols.length === 1 ? '' : 's'}, ${uniqueCallees.length} callee${uniqueCallees.length === 1 ? '' : 's'})`
+        : '';
+    progress(
+      `Found ${totalCount} symbol${totalCount === 1 ? '' : 's'}${breakdown}: ${allNames}`,
+      'info',
+    );
 
     const results: GenerationResult[] = [];
     const generated = new Set<string>();
@@ -360,7 +366,7 @@ export class Generator {
   /**
    * Check if an existing doc for a symbol is up-to-date (hash matches)
    */
-  private isDocUpToDate(symbol: SymbolInfo): boolean {
+  isDocUpToDate(symbol: SymbolInfo): boolean {
     const docPath = this.getDocPath(symbol);
     if (!existsSync(docPath)) return false;
 
@@ -377,7 +383,7 @@ export class Generator {
   /**
    * Get the expected doc file path for a symbol
    */
-  private getDocPath(symbol: SymbolInfo): string {
+  getDocPath(symbol: SymbolInfo): string {
     const fileName = this.generateFileName(symbol);
     return this.generateFilePath(symbol, fileName);
   }

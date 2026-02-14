@@ -1,9 +1,10 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
 import { TypeScriptExtractor } from '../../extractor/index.js';
 import { Generator } from '../../generator/index.js';
+import { showCoverageAndSuggestion } from '../utils/next-suggestion.js';
 import { resolveSourcePath } from '../utils/paths.js';
 
 interface RegenerateOptions {
@@ -90,7 +91,9 @@ export function registerRegenerateCommand(cli: CAC) {
         for (const doc of docs) {
           completed++;
           const resolvedPath = resolveSourcePath(doc.filePath);
-          spinner.message(`[${completed}/${docs.length}] Regenerating ${doc.symbolName} from ${resolvedPath}`);
+          spinner.message(
+            `[${completed}/${docs.length}] Regenerating ${doc.symbolName} from ${resolvedPath}`,
+          );
 
           // Check if source file still exists
           if (!existsSync(resolvedPath)) {
@@ -119,6 +122,8 @@ export function registerRegenerateCommand(cli: CAC) {
 
         // Show results
         p.log.message(results.join('\n'));
+
+        showCoverageAndSuggestion(config.outputDir);
 
         p.outro('✨ Documentation regeneration complete!');
       } catch (error) {
