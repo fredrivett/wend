@@ -141,6 +141,7 @@ export function add(a: number, b: number): number {
       // Extract and hash the function to get correct hash
       const extractor = new TypeScriptExtractor();
       const hasher = new ContentHasher();
+      // biome-ignore lint/style/noNonNullAssertion: test file, symbol is known to exist
       const symbol = extractor.extractSymbol(sourcePath, 'add')!;
       const correctHash = hasher.hashSymbol(symbol);
 
@@ -275,6 +276,7 @@ Content
       // Create two docs: one stale, one up-to-date
       const extractor = new TypeScriptExtractor();
       const hasher = new ContentHasher();
+      // biome-ignore lint/style/noNonNullAssertion: test file, symbol is known to exist
       const symbol = extractor.extractSymbol(sourcePath, 'test')!;
       const correctHash = hasher.hashSymbol(symbol);
 
@@ -325,6 +327,7 @@ Content`,
 
       const extractor = new TypeScriptExtractor();
       const hasher = new ContentHasher();
+      // biome-ignore lint/style/noNonNullAssertion: test file, symbol is known to exist
       const symbol = extractor.extractSymbol(sourcePath, 'test')!;
       const correctHash = hasher.hashSymbol(symbol);
 

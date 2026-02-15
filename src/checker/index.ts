@@ -160,6 +160,8 @@ export class StaleChecker {
           return `${dep.path}:${dep.symbol} not found`;
         case 'file-not-found':
           return `${dep.path} not found`;
+        default:
+          return `${dep.path}:${dep.symbol} unknown issue`;
       }
     });
 

@@ -34,7 +34,12 @@ export function registerServeCommand(cli: CAC) {
         spinner.stop(`Server running at ${url}`);
 
         // Auto-open in browser
-        const openCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+        const openCmd =
+          process.platform === 'darwin'
+            ? 'open'
+            : process.platform === 'win32'
+              ? 'start'
+              : 'xdg-open';
         exec(`${openCmd} ${url}`);
 
         p.log.message('Press Ctrl+C to stop');

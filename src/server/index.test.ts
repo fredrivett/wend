@@ -102,10 +102,7 @@ describe('extractRelatedSymbols', () => {
 
 </details>`;
 
-    expect(extractRelatedSymbols(content, 'Generator')).toEqual([
-      'SymbolInfo',
-      'ContentHasher',
-    ]);
+    expect(extractRelatedSymbols(content, 'Generator')).toEqual(['SymbolInfo', 'ContentHasher']);
   });
 
   it('extracts both backtick and bold, deduplicating', () => {
