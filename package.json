@@ -20,6 +20,9 @@
   "author": "@fredrivett",
   "license": "ISC",
   "description": "Docs that automatically sync with your code",
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@biomejs/biome": "^2.3.13",
     "@changesets/cli": "^2.29.8",
