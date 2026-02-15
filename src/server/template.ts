@@ -75,7 +75,7 @@ export function getTemplate(): string {
     #symbol-tree {
       flex: 1;
       overflow-y: auto;
-      padding: 8px 0;
+      padding: 8px 12px;
     }
 
     /* Tree controls */
