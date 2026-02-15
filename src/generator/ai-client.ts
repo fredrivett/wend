@@ -110,6 +110,16 @@ export class AIClient {
     prompt += `  For functions: Show the execution flow including key decision points, async operations, error handling paths, and calls to external functions/methods.\n`;
     prompt += `  For classes: Show how methods relate to each other (which methods call which) and key external dependencies. Wrap all method flows in a single subgraph labeled with the class name so they are visually grouped together.\n`;
     prompt += `  Use \`\`\`mermaid code fence with flowchart TD (top-down) orientation. Keep node labels short and readable. Use dashed lines (-.->)  for error/exception paths.\n`;
+    prompt += `  STYLING: Apply mermaid style declarations for visual clarity:\n`;
+    prompt += `    - Start/entry node: soft blue fill. Example: style Start fill:#BBDEFB,stroke:#64B5F6,color:#333\n`;
+    prompt += `    - Normal flow nodes: soft purple/lavender fill. Example: style A fill:#E8DEEE,stroke:#B39DDB,color:#333\n`;
+    prompt += `    - Error/exception nodes: soft pink/red fill. Example: style ErrNode fill:#FCE4EC,stroke:#E57373,color:#333\n`;
+    prompt += `    - Final return node: soft green fill. Example: style Return fill:#C8E6C9,stroke:#81C784,color:#333\n`;
+    prompt += `    - Keep styles consistent — define them at the end of the flowchart after all edges.\n`;
+    prompt += `  FILE SUBGRAPHS: When the function calls symbols from other files (cross-file calls), group nodes into subgraphs labeled with the source file path to show how execution crosses file boundaries. Example:\n`;
+    prompt += `    subgraph "lib/vision.ts"\n      A[analyzeImage] --> B[getVisionClient]\n    end\n`;
+    prompt += `    subgraph "lib/search/color-utils.ts"\n      C[getNearestColorName]\n    end\n`;
+    prompt += `    B --> C\n`;
     prompt += `- "Parameters" - Parameter descriptions (if applicable)\n`;
     prompt += `- "Methods" - Method descriptions for classes (if applicable)\n`;
     prompt += `- "Return Value" - What the function/method returns (if applicable)\n`;

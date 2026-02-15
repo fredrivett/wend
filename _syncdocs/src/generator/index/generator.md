@@ -1,54 +1,57 @@
 ---
 title: Generator
-generated: 2026-02-14T15:34:08.185Z
+generated: 2026-02-15T19:28:16.776Z
 dependencies:
   - path: src/generator/index.ts
     symbol: Generator
-    hash: 358943795a84ff80811896d9a11e1d57d9c11624efc5394b5eb83ba051a19c29
+    hash: 2b5252e29b36bc1f6c47e88a55d46f7e6da564da011ea0fb782f5d8a31f62edd
 ---
 # Generator
 
-A documentation generation orchestrator that extracts TypeScript symbols, generates AI-powered documentation content, and writes structured markdown files with dependency tracking. It manages the complete workflow from symbol extraction to file output, including content hashing for change detection and automatic directory structure preservation.
+A core documentation generation class that orchestrates TypeScript code analysis, AI-powered content generation, and markdown file output with dependency tracking. It provides methods for generating documentation for individual symbols or entire files, with support for call-tree traversal to include related function documentation.
 
 <details>
 <summary>Visual Flow</summary>
 
 ```mermaid
 flowchart TD
-    subgraph Generator["Generator Class"]
+    subgraph Generator["Generator Class Methods"]
         A[generate] --> B[generateDoc]
-        C[generateForFile] --> D[extractor.extractSymbols]
-        D --> E{symbols found?}
-        E -->|no| F[return error result]
-        E -->|yes| G[loop through symbols]
-        G --> A
+        B --> C[aiClient.generateDoc]
+        B --> D[hasher.hashSymbol]
+        B --> E[generateFilePath]
+        B --> F[extractTitle]
         
-        B --> H[aiClient.generateDoc]
-        H --> I[hasher.hashSymbol]
-        I --> J[build dependencies array]
-        J --> K[generateFileName]
-        K --> L[generateFilePath]
-        L --> M[extractTitle]
-        M --> N[return GeneratedDoc]
+        A --> G[writeDoc]
+        G --> H[generateFrontmatter]
+        G --> I[File System Write]
         
-        A --> O[writeDoc]
-        O --> P[generateFrontmatter]
-        P --> Q{output dir exists?}
-        Q -->|no| R[mkdirSync recursive]
-        Q -->|yes| S[writeFileSync]
-        R --> S
+        J[generateForFile] --> K[extractor.extractSymbols]
+        J --> A
         
-        A -.-> T[catch error]
-        T -.-> U[return error result]
+        L[generateWithDepth] --> M[extractor.extractSymbol]
+        L --> N[resolveCallTree]
+        N --> O[extractor.extractCallSites]
+        N --> P[extractor.extractImports]
+        N --> Q[Recursive Resolution]
         
-        V[getGitCommit] --> W[execSync git command]
-        W -.-> X[catch error]
-        X -.-> Y[return undefined]
+        L --> R[isDocUpToDate]
+        R --> S[File Hash Check]
+        L --> A
+        
+        T[Constructor] --> U[TypeScriptExtractor]
+        T --> V[ContentHasher]
+        T --> W[AIClient]
+        
+        A -.-> X[Error Handling]
+        J -.-> X
+        L -.-> X
     end
     
-    Z[TypeScriptExtractor] --> D
-    AA[AIClient] --> H
-    BB[ContentHasher] --> I
+    Y[External Dependencies] --> U
+    Y --> V
+    Y --> W
+    Y --> I
 ```
 
 </details>
@@ -59,127 +62,104 @@ flowchart TD
 **Constructor Parameters:**
 - `config: GeneratorConfig` - Configuration object containing:
   - `apiKey: string` - API key for AI client
-  - `model: string` - AI model to use for documentation generation
+  - `model: string` - AI model to use for generation
+  - `outputDir: string` - Directory for generated documentation
   - `style: string` - Documentation style preference
-  - `outputDir: string` - Directory where generated docs will be written
 
 </details>
 
 <details>
 <summary>Methods</summary>
 
-**Public Methods:**
-
-`generate(request: GenerateRequest): Promise<GenerationResult>`
+**`generate(request: GenerateRequest): Promise<GenerationResult>`**
 - Generates documentation for a single symbol
-- Returns success/failure result with file path or error message
+- Handles the complete generation pipeline from content creation to file output
+- Returns success/failure status with file path or error message
 
-`generateForFile(filePath: string): Promise<GenerationResult[]>`
-- Extracts all symbols from a file and generates documentation for each
-- Returns array of generation results
+**`generateForFile(filePath: string): Promise<GenerationResult[]>`**
+- Extracts all symbols from a TypeScript file and generates documentation for each
+- Returns array of generation results for all discovered symbols
 
-`getGitCommit(): Promise<string | undefined>`
-- Retrieves current Git commit hash if available
-- Returns `undefined` if not in a Git repository or command fails
+**`generateWithDepth(filePath: string, options): Promise<GenerationResult[]>`**
+- Advanced generation with call-tree traversal support
+- Options include `symbolName`, `depth`, `force`, and `onProgress` callback
+- Resolves dependencies and generates documentation for related symbols
 
-**Private Methods:**
+**`resolveCallTree(symbol: SymbolInfo, depth: number, visited?: Set<string>): SymbolInfo[]`**
+- Recursively discovers symbols called by the target symbol
+- Handles both same-file and cross-file function calls via import resolution
+- Prevents infinite recursion with visited set tracking
 
-`generateDoc(request: GenerateRequest): Promise<GeneratedDoc>`
-- Core documentation generation logic
-- Coordinates AI content generation, dependency tracking, and file path creation
+**`isDocUpToDate(symbol: SymbolInfo): boolean`**
+- Checks if existing documentation matches current symbol hash
+- Enables incremental generation by skipping unchanged symbols
 
-`writeDoc(doc: GeneratedDoc): void`
-- Writes documentation to file with YAML frontmatter
-- Creates output directories as needed
-
-`generateFrontmatter(doc: GeneratedDoc): string`
-- Creates YAML frontmatter with metadata and dependencies
-
-`generateFilePath(symbol: SymbolInfo, fileName: string): string`
-- Generates output file path preserving source directory structure
-
-`generateFileName(symbol: SymbolInfo): string`
-- Converts symbol name to kebab-case filename with `.md` extension
-
-`extractTitle(content: string): string | null`
-- Extracts title from first H1 heading in markdown content
+**`getDocPath(symbol: SymbolInfo): string`**
+- Returns the expected file path for a symbol's documentation
+- Uses consistent naming and directory structure
 
 </details>
 
 <details>
 <summary>Return Value</summary>
 
-**`generate()` and `generateForFile()` return `GenerationResult`:**
-```typescript
-{
-  success: boolean;
-  filePath?: string;    // Present when success is true
-  error?: string;       // Present when success is false
-}
-```
-
-**`getGitCommit()` returns:**
-- `string` - Git commit hash if successful
-- `undefined` - If not in Git repo or command fails
+Most methods return `Promise<GenerationResult>` or `Promise<GenerationResult[]>` where `GenerationResult` contains:
+- `success: boolean` - Whether generation succeeded
+- `filePath?: string` - Path to generated file (on success)
+- `error?: string` - Error message (on failure)
+- `skipped?: boolean` - Whether generation was skipped (for up-to-date docs)
 
 </details>
 
 <details>
 <summary>Usage Examples</summary>
 
-**Basic symbol documentation generation:**
+**Basic symbol generation:**
 ```typescript
-const config = {
+const generator = new Generator({
   apiKey: 'your-api-key',
   model: 'gpt-4',
-  style: 'technical',
-  outputDir: './docs'
-};
+  outputDir: './docs',
+  style: 'technical'
+});
 
-const generator = new Generator(config);
+const result = await generator.generate({
+  symbol: symbolInfo,
+  context: { projectContext: 'React application' }
+});
 
-const request = {
-  symbol: {
-    name: 'MyClass',
-    type: 'class',
-    filePath: '/src/myClass.ts',
-    // ... other symbol properties
-  }
-};
-
-const result = await generator.generate(request);
 if (result.success) {
-  console.log(`Documentation written to: ${result.filePath}`);
-} else {
-  console.error(`Generation failed: ${result.error}`);
+  console.log(`Generated: ${result.filePath}`);
 }
 ```
 
-**Generate documentation for entire file:**
+**Generate for entire file:**
 ```typescript
 const results = await generator.generateForFile('./src/utils.ts');
-
-for (const result of results) {
+results.forEach(result => {
   if (result.success) {
-    console.log(`✓ Generated: ${result.filePath}`);
+    console.log(`Generated: ${result.filePath}`);
   } else {
-    console.error(`✗ Failed: ${result.error}`);
+    console.error(`Failed: ${result.error}`);
   }
-}
+});
 ```
 
-**With context and custom prompt:**
+**Generate with call-tree traversal:**
 ```typescript
-const request = {
-  symbol: mySymbol,
-  context: {
-    projectContext: 'This is a React component library',
-    relatedSymbols: [relatedSymbol1, relatedSymbol2]
-  },
-  customPrompt: 'Focus on usage examples and props'
-};
+const results = await generator.generateWithDepth('./src/api.ts', {
+  symbolName: 'fetchUserData',
+  depth: 2,
+  force: true,
+  onProgress: (message, type) => console.log(`[${type}] ${message}`)
+});
+```
 
-const result = await generator.generate(request);
+**Check if documentation is current:**
+```typescript
+if (!generator.isDocUpToDate(symbol)) {
+  await generator.generate({ symbol });
+}
 ```
 
 </details>
@@ -187,68 +167,63 @@ const result = await generator.generate(request);
 <details>
 <summary>Implementation Details</summary>
 
-**Dependency Management:**
-- Each generated document includes a `dependencies` array in frontmatter
-- Dependencies include the source symbol and any related symbols
-- Content hashes enable change detection for incremental updates
-- File paths are stored as relative paths for portability
+The `Generator` class coordinates several specialized components:
+
+- **`TypeScriptExtractor`**: Parses TypeScript files to extract symbol information, call sites, and imports
+- **`ContentHasher`**: Creates SHA-256 hashes of symbols for change detection
+- **`AIClient`**: Interfaces with AI services to generate human-readable documentation
 
 **File Organization:**
-- Output structure mirrors source directory structure
-- Files are organized as: `outputDir/sourceDir/sourceFile/symbol-name.md`
-- Directory creation is handled automatically with recursive `mkdir`
+- Preserves source directory structure in output
+- Generates kebab-case filenames from symbol names
+- Creates nested directories: `outputDir/sourcePath/sourceFile/symbol-name.md`
 
-**Content Generation Pipeline:**
-1. Extract symbol information using `TypeScriptExtractor`
-2. Generate content via `AIClient` with configurable style and context
-3. Hash symbol content for dependency tracking
-4. Generate appropriate file paths preserving directory structure
-5. Create frontmatter with metadata and dependencies
-6. Write complete document to file system
+**Frontmatter Generation:**
+- Adds YAML frontmatter with title, generation timestamp, and dependency tracking
+- Dependencies include file paths, symbol names, and content hashes
+- Enables incremental regeneration by comparing hashes
 
-**Error Handling:**
-- All public methods return result objects instead of throwing
-- File system operations are wrapped with automatic directory creation
-- Git operations fail gracefully when not in a repository
+**Call Tree Resolution:**
+- Recursively follows function calls up to specified depth
+- Resolves imports to handle cross-file dependencies
+- Uses visited set to prevent infinite recursion
+- Supports both named and default imports
 
 </details>
 
 <details>
 <summary>Edge Cases</summary>
 
-**Empty Symbol Files:**
-- `generateForFile()` returns error result when no symbols found
-- Individual symbol generation can still succeed if symbol is valid
+**Symbol Resolution:**
+- Handles same-named symbols in different scopes by using file path as part of the key
+- Falls back gracefully when import resolution fails
+- Skips unresolvable external dependencies
 
-**File System Issues:**
-- Output directories are created recursively if they don't exist
-- File write errors are caught and returned as error results
-- Path resolution handles both absolute and relative source paths
+**File System Operations:**
+- Creates output directories recursively if they don't exist
+- Handles file write permissions errors in the error response
+- Uses UTF-8 encoding consistently
 
-**Git Repository Detection:**
-- `getGitCommit()` gracefully handles non-Git directories
-- Command execution failures return `undefined` rather than throwing
+**Hash-based Caching:**
+- Hash comparison may miss changes in dependencies (only checks direct symbol hash)
+- Force flag bypasses all caching when complete regeneration is needed
+- Git integration attempts to get commit hash but degrades gracefully
 
-**Symbol Name Conflicts:**
-- File names use kebab-case conversion to avoid conflicts
-- Directory structure separation prevents most naming collisions
-- Multiple symbols with same name in different files get separate directories
-
-**Content Extraction:**
-- Title extraction falls back to symbol name if no H1 found
-- Empty or malformed markdown content is still written with valid frontmatter
+**Call Tree Depth:**
+- Zero depth generates only the target symbol(s)
+- Deep call trees can discover many symbols; progress callback helps track status
+- Circular dependencies are handled by the visited set
 
 </details>
 
 <details>
 <summary>Related</summary>
 
-- `TypeScriptExtractor` - Extracts symbols from TypeScript source files
-- `AIClient` - Handles AI-powered content generation
-- `ContentHasher` - Generates hashes for change detection
-- `GeneratorConfig` - Configuration interface for generator setup
-- `GenerateRequest` - Request structure for documentation generation
-- `GenerationResult` - Result structure returned by generation methods
-- `SymbolInfo` - Symbol metadata structure from extraction
+- **`TypeScriptExtractor`**: Handles code parsing and symbol extraction
+- **`ContentHasher`**: Provides change detection capabilities  
+- **`AIClient`**: Manages AI service integration for content generation
+- **`GenerateRequest`**: Input interface for generation requests
+- **`GenerationResult`**: Output interface for generation responses
+- **`SymbolInfo`**: Core data structure representing extracted code symbols
 
 </details>
