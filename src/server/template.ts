@@ -78,27 +78,111 @@ export function getTemplate(): string {
       padding: 8px 0;
     }
 
-    .dir-group {
-      margin-bottom: 4px;
+    /* Tree controls */
+    .tree-controls {
+      display: flex;
+      gap: 4px;
+      margin-top: 8px;
     }
 
-    .dir-label {
-      padding: 4px 16px;
+    .tree-controls button {
+      flex: 1;
+      padding: 4px 8px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 500;
       color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .tree-controls button:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    /* Tree nodes */
+    .tree-dir {
+      user-select: none;
+    }
+
+    .tree-dir-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      border-radius: 4px;
+      margin: 0 4px;
+    }
+
+    .tree-dir-label:hover {
+      background: var(--bg-hover);
+    }
+
+    .tree-dir-label .chevron {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+
+    .tree-dir.collapsed > .tree-dir-label .chevron {
+      transform: rotate(-90deg);
+    }
+
+    .tree-dir-label .dir-icon {
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .tree-dir-label .dir-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tree-children {
+      overflow: hidden;
+    }
+
+    .tree-dir.collapsed > .tree-children {
+      display: none;
     }
 
     .symbol-link {
-      display: block;
-      padding: 4px 16px 4px 24px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
       font-size: 13px;
       color: var(--text);
       text-decoration: none;
       cursor: pointer;
       border-left: 2px solid transparent;
+      border-radius: 0 4px 4px 0;
+      margin: 0 4px 0 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .symbol-link .sym-icon {
+      color: var(--text-muted);
+      font-size: 12px;
+      flex-shrink: 0;
+      width: 16px;
+      text-align: center;
     }
 
     .symbol-link:hover {
@@ -308,6 +392,10 @@ export function getTemplate(): string {
       <div id="sidebar-header">
         <h1>syncdocs</h1>
         <input type="text" id="search" placeholder="Search symbols...">
+        <div class="tree-controls">
+          <button id="collapse-all" title="Collapse all">Collapse all</button>
+          <button id="expand-all" title="Expand all">Expand all</button>
+        </div>
       </div>
       <nav id="symbol-tree"></nav>
     </aside>
@@ -352,11 +440,10 @@ export function getTemplate(): string {
       renderSidebar(symbolIndex);
     }
 
-    // --- Sidebar ---
-    function renderSidebar(index, filter = '') {
-      const tree = document.getElementById('symbol-tree');
-      tree.innerHTML = '';
+    // --- Tree building ---
+    function buildTree(index, filter = '') {
       const lowerFilter = filter.toLowerCase();
+      const root = { children: {}, symbols: [] };
 
       for (const [dir, symbols] of Object.entries(index)) {
         const filtered = symbols.filter(s =>
@@ -364,28 +451,99 @@ export function getTemplate(): string {
         );
         if (filtered.length === 0) continue;
 
-        const group = document.createElement('div');
-        group.className = 'dir-group';
-
-        const label = document.createElement('div');
-        label.className = 'dir-label';
-        label.textContent = dir;
-        group.appendChild(label);
-
-        for (const sym of filtered) {
-          const link = document.createElement('a');
-          link.className = 'symbol-link';
-          link.textContent = sym.name;
-          link.dataset.docPath = sym.docPath;
-          link.href = '#/doc/' + encodeURIComponent(sym.docPath);
-          group.appendChild(link);
+        const parts = dir === '.' ? ['.'] : dir.split('/');
+        let node = root;
+        for (const part of parts) {
+          if (!node.children[part]) {
+            node.children[part] = { children: {}, symbols: [] };
+          }
+          node = node.children[part];
         }
+        node.symbols.push(...filtered);
+      }
 
-        tree.appendChild(group);
+      return root;
+    }
+
+    function renderTreeNode(name, node, depth) {
+      const hasChildren = Object.keys(node.children).length > 0 || node.symbols.length > 0;
+      if (!hasChildren) return null;
+
+      const div = document.createElement('div');
+      div.className = 'tree-dir';
+
+      const label = document.createElement('div');
+      label.className = 'tree-dir-label';
+      label.style.paddingLeft = (8 + depth * 16) + 'px';
+
+      label.innerHTML =
+        '<span class="chevron">&#9660;</span>' +
+        '<span class="dir-name">' + escapeHtml(name) + '</span>';
+
+      label.addEventListener('click', () => {
+        div.classList.toggle('collapsed');
+      });
+
+      div.appendChild(label);
+
+      const childContainer = document.createElement('div');
+      childContainer.className = 'tree-children';
+
+      // Render subdirectories first
+      const sortedDirs = Object.keys(node.children).sort();
+      for (const childName of sortedDirs) {
+        const childEl = renderTreeNode(childName, node.children[childName], depth + 1);
+        if (childEl) childContainer.appendChild(childEl);
+      }
+
+      // Then symbols
+      for (const sym of node.symbols) {
+        const link = document.createElement('a');
+        link.className = 'symbol-link';
+        link.style.paddingLeft = (8 + (depth + 1) * 16) + 'px';
+        link.innerHTML = '<span class="sym-icon">&#9643;</span> ' + escapeHtml(sym.name);
+        link.dataset.docPath = sym.docPath;
+        link.href = '#/doc/' + encodeURIComponent(sym.docPath);
+        childContainer.appendChild(link);
+      }
+
+      div.appendChild(childContainer);
+      return div;
+    }
+
+    // --- Sidebar ---
+    function renderSidebar(index, filter = '') {
+      const treeEl = document.getElementById('symbol-tree');
+      treeEl.innerHTML = '';
+
+      const tree = buildTree(index, filter);
+
+      // If filtering, render flat so nothing is hidden
+      if (filter) {
+        for (const [name, node] of Object.entries(tree.children).sort(([a],[b]) => a.localeCompare(b))) {
+          const el = renderTreeNode(name, node, 0);
+          if (el) treeEl.appendChild(el);
+        }
+        // Expand all when filtering
+        treeEl.querySelectorAll('.tree-dir').forEach(d => d.classList.remove('collapsed'));
+      } else {
+        for (const [name, node] of Object.entries(tree.children).sort(([a],[b]) => a.localeCompare(b))) {
+          const el = renderTreeNode(name, node, 0);
+          if (el) treeEl.appendChild(el);
+        }
       }
 
       updateActiveLink();
     }
+
+    // --- Collapse / Expand all ---
+    document.getElementById('collapse-all').addEventListener('click', () => {
+      document.querySelectorAll('#symbol-tree .tree-dir').forEach(d => d.classList.add('collapsed'));
+    });
+
+    document.getElementById('expand-all').addEventListener('click', () => {
+      document.querySelectorAll('#symbol-tree .tree-dir').forEach(d => d.classList.remove('collapsed'));
+    });
 
     function updateActiveLink() {
       const hash = decodeURIComponent(window.location.hash.slice(6) || '');
