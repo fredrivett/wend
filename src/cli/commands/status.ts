@@ -30,7 +30,7 @@ export function registerStatusCommand(cli: CAC) {
         }
 
         // Scan project and show coverage
-        const spinner = p.spinner({ delay: 40 });
+        const spinner = p.spinner();
         spinner.start('Finding source files');
 
         const scan = await scanProjectAsync(config.outputDir, (message) => {
