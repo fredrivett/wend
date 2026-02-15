@@ -219,9 +219,7 @@ async function findSourceFilesAsync(rootDir: string): Promise<string[]> {
         if (skipDirs.has(item)) continue;
         await walk(fullPath);
       } else if (s.isFile()) {
-        const hasSourceExt = sourceExts.has(
-          fullPath.slice(fullPath.lastIndexOf('.')),
-        );
+        const hasSourceExt = sourceExts.has(fullPath.slice(fullPath.lastIndexOf('.')));
         if (!hasSourceExt) continue;
 
         const isTest = testPatterns.some((p) => fullPath.endsWith(p));
