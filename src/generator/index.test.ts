@@ -526,6 +526,189 @@ function main2() { return helper() }
       expect(helperDocs).toHaveLength(1);
     });
 
+    it('should resolve cross-file calls via imports', () => {
+      // Main file imports and calls a function from another file
+      const helperCode = `
+export function externalHelper() { return 'from other file' }
+`;
+      const mainCode = `
+import { externalHelper } from './helper'
+function main() { return externalHelper() }
+`;
+      const helperPath = join(SRC_DIR, 'helper.ts');
+      const mainPath = join(SRC_DIR, 'cross-file.ts');
+      writeFileSync(helperPath, helperCode);
+      writeFileSync(mainPath, mainCode);
+
+      const symbol = {
+        name: 'main',
+        kind: 'function' as const,
+        filePath: mainPath,
+        params: '',
+        body: '{ return externalHelper() }',
+        fullText: 'function main() { return externalHelper() }',
+        startLine: 3,
+        endLine: 3,
+      };
+
+      const result = generator.resolveCallTree(symbol, 1);
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('externalHelper');
+      expect(result[0].filePath).toBe(helperPath);
+    });
+
+    it('should resolve multi-level cross-file calls', () => {
+      // main.ts → calls helperA from a.ts → calls helperB from b.ts
+      const bCode = `
+export function helperB() { return 'deep' }
+`;
+      const aCode = `
+import { helperB } from './b'
+export function helperA() { return helperB() }
+`;
+      const mainCode = `
+import { helperA } from './a'
+function main() { return helperA() }
+`;
+      writeFileSync(join(SRC_DIR, 'b.ts'), bCode);
+      writeFileSync(join(SRC_DIR, 'a.ts'), aCode);
+      const mainPath = join(SRC_DIR, 'multi-cross.ts');
+      writeFileSync(mainPath, mainCode);
+
+      const symbol = {
+        name: 'main',
+        kind: 'function' as const,
+        filePath: mainPath,
+        params: '',
+        body: '{ return helperA() }',
+        fullText: 'function main() { return helperA() }',
+        startLine: 3,
+        endLine: 3,
+      };
+
+      const result = generator.resolveCallTree(symbol, 2);
+      const names = result.map((s) => s.name);
+      expect(names).toContain('helperA');
+      expect(names).toContain('helperB');
+    });
+
+    it('should prefer same-file match over cross-file import', () => {
+      // If a function exists both locally and as an import, prefer local
+      const externalCode = `
+export function helper() { return 'external' }
+`;
+      const mainCode = `
+import { helper } from './external-helper'
+function helper() { return 'local' }
+function main() { return helper() }
+`;
+      writeFileSync(join(SRC_DIR, 'external-helper.ts'), externalCode);
+      const mainPath = join(SRC_DIR, 'prefer-local.ts');
+      writeFileSync(mainPath, mainCode);
+
+      const symbol = {
+        name: 'main',
+        kind: 'function' as const,
+        filePath: mainPath,
+        params: '',
+        body: '{ return helper() }',
+        fullText: 'function main() { return helper() }',
+        startLine: 4,
+        endLine: 4,
+      };
+
+      const result = generator.resolveCallTree(symbol, 1);
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('helper');
+      // Should be from the same file, not the imported one
+      expect(result[0].filePath).toBe(mainPath);
+    });
+
+    it('should handle renamed imports in cross-file resolution', () => {
+      const moduleCode = `
+export function originalFn() { return 'original' }
+`;
+      const mainCode = `
+import { originalFn as renamedFn } from './renamed-module'
+function main() { return renamedFn() }
+`;
+      const modulePath = join(SRC_DIR, 'renamed-module.ts');
+      const mainPath = join(SRC_DIR, 'renamed-caller.ts');
+      writeFileSync(modulePath, moduleCode);
+      writeFileSync(mainPath, mainCode);
+
+      const symbol = {
+        name: 'main',
+        kind: 'function' as const,
+        filePath: mainPath,
+        params: '',
+        body: '{ return renamedFn() }',
+        fullText: 'function main() { return renamedFn() }',
+        startLine: 3,
+        endLine: 3,
+      };
+
+      const result = generator.resolveCallTree(symbol, 1);
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('originalFn');
+      expect(result[0].filePath).toBe(modulePath);
+    });
+
+    it('should skip unresolvable imports (bare packages)', () => {
+      const mainCode = `
+import { useState } from 'react'
+function main() { return useState(0) }
+`;
+      const mainPath = join(SRC_DIR, 'bare-import.ts');
+      writeFileSync(mainPath, mainCode);
+
+      const symbol = {
+        name: 'main',
+        kind: 'function' as const,
+        filePath: mainPath,
+        params: '',
+        body: '{ return useState(0) }',
+        fullText: 'function main() { return useState(0) }',
+        startLine: 3,
+        endLine: 3,
+      };
+
+      const result = generator.resolveCallTree(symbol, 1);
+      expect(result).toHaveLength(0);
+    });
+
+    it('should resolve cross-file symbol with same name as caller', () => {
+      // validate() in a.ts calls validate() imported from b.ts
+      // The name-only guard previously dropped this — composite key check fixes it
+      const bCode = `
+export function validate() { return true }
+`;
+      const aCode = `
+import { validate as baseValidate } from './same-name-b'
+function validate() { return baseValidate() }
+`;
+      const bPath = join(SRC_DIR, 'same-name-b.ts');
+      const aPath = join(SRC_DIR, 'same-name-a.ts');
+      writeFileSync(bPath, bCode);
+      writeFileSync(aPath, aCode);
+
+      const symbol = {
+        name: 'validate',
+        kind: 'function' as const,
+        filePath: aPath,
+        params: '',
+        body: '{ return baseValidate() }',
+        fullText: 'function validate() { return baseValidate() }',
+        startLine: 3,
+        endLine: 3,
+      };
+
+      const result = generator.resolveCallTree(symbol, 1);
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('validate');
+      expect(result[0].filePath).toBe(bPath);
+    });
+
     it('should handle cycles without infinite recursion', () => {
       const code = `
 function a() { return b() }

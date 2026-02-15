@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { toRelativePath } from '../cli/utils/paths.js';
 import { TypeScriptExtractor } from '../extractor/index.js';
+import { resolveImportPath } from '../extractor/resolve-import.js';
 import type { SymbolInfo } from '../extractor/types.js';
 import { ContentHasher } from '../hasher/index.js';
 import { AIClient } from './ai-client.js';
@@ -224,13 +225,29 @@ export class Generator {
     // Get all symbols in the same file to match against
     const fileSymbols = this.extractor.extractSymbols(symbol.filePath).symbols;
 
+    // Get imports for cross-file resolution
+    const imports = this.extractor.extractImports(symbol.filePath);
+
     const found: SymbolInfo[] = [];
 
     for (const call of callSites) {
-      const match = fileSymbols.find((s) => s.name === call.name);
-      if (match && match.name !== symbol.name) {
+      // 1. Try same-file match
+      let match = fileSymbols.find((s) => s.name === call.name);
+
+      // 2. Try cross-file match via imports
+      if (!match) {
+        const imp = imports.find((i) => i.name === call.name);
+        if (imp) {
+          const resolvedPath = resolveImportPath(symbol.filePath, imp.source);
+          if (resolvedPath) {
+            match = this.extractor.extractSymbol(resolvedPath, imp.originalName) ?? undefined;
+          }
+        }
+      }
+
+      if (match) {
         const matchKey = `${match.filePath}:${match.name}`;
-        if (!visited.has(matchKey)) {
+        if (matchKey !== key && !visited.has(matchKey)) {
           found.push(match);
           // Recurse with depth - 1
           const deeper = this.resolveCallTree(match, depth - 1, visited);

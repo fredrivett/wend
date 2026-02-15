@@ -527,6 +527,129 @@ class Processor {
     });
   });
 
+  describe('extractImports', () => {
+    it('should extract named imports', () => {
+      const code = `
+import { foo, bar } from './utils'
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const imports = extractor.extractImports(TEST_FILE);
+
+      expect(imports).toHaveLength(2);
+      expect(imports[0]).toMatchObject({ name: 'foo', originalName: 'foo', source: './utils', isDefault: false });
+      expect(imports[1]).toMatchObject({ name: 'bar', originalName: 'bar', source: './utils', isDefault: false });
+    });
+
+    it('should extract default imports', () => {
+      const code = `
+import MyModule from './my-module'
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const imports = extractor.extractImports(TEST_FILE);
+
+      expect(imports).toHaveLength(1);
+      expect(imports[0]).toMatchObject({ name: 'MyModule', originalName: 'MyModule', source: './my-module', isDefault: true });
+    });
+
+    it('should extract both default and named imports from same declaration', () => {
+      const code = `
+import React, { useState, useEffect } from 'react'
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const imports = extractor.extractImports(TEST_FILE);
+
+      expect(imports).toHaveLength(3);
+      expect(imports[0]).toMatchObject({ name: 'React', isDefault: true });
+      expect(imports[1]).toMatchObject({ name: 'useState', isDefault: false });
+      expect(imports[2]).toMatchObject({ name: 'useEffect', isDefault: false });
+    });
+
+    it('should skip type-only imports', () => {
+      const code = `
+import type { Foo } from './types'
+import { bar } from './utils'
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const imports = extractor.extractImports(TEST_FILE);
+
+      expect(imports).toHaveLength(1);
+      expect(imports[0].name).toBe('bar');
+    });
+
+    it('should skip individual type-only elements', () => {
+      const code = `
+import { type Foo, bar, type Baz } from './mixed'
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const imports = extractor.extractImports(TEST_FILE);
+
+      expect(imports).toHaveLength(1);
+      expect(imports[0].name).toBe('bar');
+    });
+
+    it('should handle renamed imports with originalName', () => {
+      const code = `
+import { originalName as localName } from './module'
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const imports = extractor.extractImports(TEST_FILE);
+
+      expect(imports).toHaveLength(1);
+      expect(imports[0]).toMatchObject({
+        name: 'localName',
+        originalName: 'originalName',
+        source: './module',
+        isDefault: false,
+      });
+    });
+
+    it('should skip side-effect imports', () => {
+      const code = `
+import './side-effect'
+import { foo } from './utils'
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const imports = extractor.extractImports(TEST_FILE);
+
+      expect(imports).toHaveLength(1);
+      expect(imports[0].name).toBe('foo');
+    });
+
+    it('should handle imports from multiple sources', () => {
+      const code = `
+import { a } from './file-a'
+import { b } from './file-b'
+import { c } from '@/lib/file-c'
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const imports = extractor.extractImports(TEST_FILE);
+
+      expect(imports).toHaveLength(3);
+      expect(imports[0]).toMatchObject({ name: 'a', source: './file-a' });
+      expect(imports[1]).toMatchObject({ name: 'b', source: './file-b' });
+      expect(imports[2]).toMatchObject({ name: 'c', source: '@/lib/file-c' });
+    });
+
+    it('should return empty array for file with no imports', () => {
+      const code = `
+function standalone() { return 42 }
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const imports = extractor.extractImports(TEST_FILE);
+
+      expect(imports).toHaveLength(0);
+    });
+  });
+
   describe('TypeScript-specific Features', () => {
     it('should handle generic functions', () => {
       const code = `

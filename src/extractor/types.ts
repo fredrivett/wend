@@ -18,6 +18,13 @@ export interface CallSite {
   expression: string;
 }
 
+export interface ImportInfo {
+  name: string;
+  originalName: string; // original export name (differs from name when renamed: import { foo as bar })
+  source: string;
+  isDefault: boolean;
+}
+
 export interface ExtractionResult {
   symbols: SymbolInfo[];
   errors: string[];

@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { ExtractionError } from '../cli/utils/errors.js';
-import type { CallSite, ExtractionResult, SymbolInfo } from './types.js';
+import type { CallSite, ExtractionResult, ImportInfo, SymbolInfo } from './types.js';
 
 export class TypeScriptExtractor {
   /**
@@ -99,6 +99,53 @@ export class TypeScriptExtractor {
 
     walk(bodyNode);
     return callSites;
+  }
+
+  /**
+   * Extract import declarations from a file
+   */
+  extractImports(filePath: string): ImportInfo[] {
+    const sourceText = readFileSync(filePath, 'utf-8');
+    const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true);
+
+    const imports: ImportInfo[] = [];
+
+    ts.forEachChild(sourceFile, (node) => {
+      if (!ts.isImportDeclaration(node)) return;
+
+      const moduleSpecifier = node.moduleSpecifier;
+      if (!ts.isStringLiteral(moduleSpecifier)) return;
+      const source = moduleSpecifier.text;
+
+      const importClause = node.importClause;
+      if (!importClause) return;
+
+      // Skip type-only imports: import type { Foo } from "..."
+      if (importClause.isTypeOnly) return;
+
+      // Default import: import Foo from "..."
+      if (importClause.name) {
+        const name = importClause.name.getText(sourceFile);
+        imports.push({ name, originalName: name, source, isDefault: true });
+      }
+
+      // Named imports: import { Foo, Bar, original as renamed } from "..."
+      if (importClause.namedBindings && ts.isNamedImports(importClause.namedBindings)) {
+        for (const element of importClause.namedBindings.elements) {
+          // Skip type-only elements: import { type Foo } from "..."
+          if (element.isTypeOnly) continue;
+
+          const localName = element.name.getText(sourceFile);
+          // propertyName is the original export name (only present when renamed)
+          const originalName = element.propertyName
+            ? element.propertyName.getText(sourceFile)
+            : localName;
+          imports.push({ name: localName, originalName, source, isDefault: false });
+        }
+      }
+    });
+
+    return imports;
   }
 
   /**
