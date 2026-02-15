@@ -268,8 +268,20 @@ export function getTemplate(): string {
     .source-path {
       font-size: 13px;
       color: var(--text-muted);
-      margin-bottom: 16px;
+      margin-bottom: 4px;
       font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    }
+
+    .doc-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      gap: 16px;
+    }
+
+    .doc-meta span {
+      white-space: nowrap;
     }
 
     .overview {
@@ -666,6 +678,19 @@ export function getTemplate(): string {
         html += '<div class="source-path">' + escapeHtml(doc.sourcePath) + '</div>';
       }
 
+      // Metadata (syncdocs version, generated timestamp)
+      const metaParts = [];
+      metaParts.push('<span>syncdocs v' + (doc.syncdocsVersion ? escapeHtml(doc.syncdocsVersion) : ': unknown') + '</span>');
+      if (doc.generated) {
+        const date = new Date(doc.generated);
+        const formatted = date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+          + ' ' + date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        metaParts.push('<span>Generated ' + formatted + '</span>');
+      }
+      if (metaParts.length > 0) {
+        html += '<div class="doc-meta">' + metaParts.join('') + '</div>';
+      }
+
       // Dependency graph
       if (doc.dependencyGraph) {
         html += '<div class="dep-graph">';
@@ -725,6 +750,13 @@ export function getTemplate(): string {
       } catch (e) {
         console.warn('Mermaid init error:', e);
       }
+
+      // Auto-expand the Visual Flow details section
+      container.querySelectorAll('#doc-content details > summary').forEach(summary => {
+        if (summary.textContent.trim() === 'Visual Flow') {
+          summary.parentElement.setAttribute('open', '');
+        }
+      });
 
       // Make related symbol names clickable
       if (doc.related && doc.related.length > 0) {

@@ -11,6 +11,8 @@ export interface SymbolEntry {
   sourcePath: string;
   overview: string;
   related: string[]; // symbol names extracted from Related section
+  syncdocsVersion?: string;
+  generated?: string;
 }
 
 export interface SymbolIndex {
@@ -42,6 +44,8 @@ function buildSymbolIndex(outputDir: string): SymbolIndex {
         sourcePath,
         overview,
         related,
+        syncdocsVersion: metadata.syncdocsVersion,
+        generated: metadata.generated,
       };
 
       entries.set(docPath, entry);
@@ -167,6 +171,8 @@ function buildDocResponse(docPath: string, index: SymbolIndex, outputDir: string
   return {
     name: entry.name,
     sourcePath: entry.sourcePath,
+    syncdocsVersion: entry.syncdocsVersion,
+    generated: entry.generated,
     markdown,
     dependencyGraph,
     related: entry.related
