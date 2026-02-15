@@ -192,11 +192,14 @@ export function findSourceFiles(rootDir: string): string[] {
 
       if (stat.isDirectory()) {
         if (
+          item.startsWith('.') ||
           item === 'node_modules' ||
-          item === '.git' ||
           item === 'dist' ||
           item === 'build' ||
-          item === '_syncdocs'
+          item === 'coverage' ||
+          item === 'storybook-static' ||
+          item === '_syncdocs' ||
+          item === '__generated__'
         ) {
           continue;
         }
