@@ -1,5 +1,11 @@
 # syncdocs
 
+## 0.1.1
+
+### Patch Changes
+
+- 02f1ece: Fix release workflow build failing by separating build and publish steps
+
 ## 0.1.0
 
 ### Minor Changes
