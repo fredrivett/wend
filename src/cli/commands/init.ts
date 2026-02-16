@@ -14,7 +14,7 @@ interface InitConfig {
   };
   generation: {
     prompt: string;
-    aiProvider: 'anthropic' | 'openai' | 'claude-code';
+    aiProvider: 'anthropic';
   };
   git: {
     includeCommitMessages: boolean;
@@ -73,21 +73,6 @@ export function registerInitCommand(cli: CAC) {
     });
 
     if (p.isCancel(excludePattern)) {
-      p.cancel('Setup cancelled');
-      process.exit(0);
-    }
-
-    const aiProvider = await p.select({
-      message: 'Which AI provider?',
-      options: [
-        { value: 'anthropic', label: 'Anthropic (Claude)' },
-        { value: 'openai', label: 'OpenAI (GPT-4)' },
-        { value: 'claude-code', label: 'Use Claude Code access' },
-      ],
-      initialValue: 'anthropic',
-    });
-
-    if (p.isCancel(aiProvider)) {
       p.cancel('Setup cancelled');
       process.exit(0);
     }
@@ -164,7 +149,7 @@ export function registerInitCommand(cli: CAC) {
       },
       generation: {
         prompt: getPromptForStyle(docStyle as string, customPrompt),
-        aiProvider: aiProvider as 'anthropic' | 'openai' | 'claude-code',
+        aiProvider: 'anthropic',
       },
       git: {
         includeCommitMessages: includeCommits as boolean,

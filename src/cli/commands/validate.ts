@@ -38,21 +38,11 @@ export function registerValidateCommand(cli: CAC) {
       ];
 
       // Check if API key is set
-      const provider = config.generation?.aiProvider;
-      if (provider === 'anthropic') {
-        const hasKey = !!process.env.ANTHROPIC_API_KEY;
-        lines.push(hasKey ? '✓ ANTHROPIC_API_KEY found' : '⚠ ANTHROPIC_API_KEY not set');
-        if (!hasKey) {
-          lines.push('');
-          lines.push('Set it with: export ANTHROPIC_API_KEY=your-key-here');
-        }
-      } else if (provider === 'openai') {
-        const hasKey = !!process.env.OPENAI_API_KEY;
-        lines.push(hasKey ? '✓ OPENAI_API_KEY found' : '⚠ OPENAI_API_KEY not set');
-        if (!hasKey) {
-          lines.push('');
-          lines.push('Set it with: export OPENAI_API_KEY=your-key-here');
-        }
+      const hasKey = !!process.env.ANTHROPIC_API_KEY;
+      lines.push(hasKey ? '✓ ANTHROPIC_API_KEY found' : '⚠ ANTHROPIC_API_KEY not set');
+      if (!hasKey) {
+        lines.push('');
+        lines.push('Set it with: export ANTHROPIC_API_KEY=your-key-here');
       }
 
       p.log.message(lines.join('\n'));
@@ -95,10 +85,9 @@ async function loadAndValidateConfig(): Promise<Config> {
     throw new ConfigError('Missing required field: generation.aiProvider');
   }
 
-  const validProviders = ['anthropic', 'openai', 'claude-code'];
-  if (!validProviders.includes(config.generation.aiProvider)) {
+  if (config.generation.aiProvider !== 'anthropic') {
     throw new ConfigError(
-      `Invalid aiProvider: ${config.generation.aiProvider}. Must be one of: ${validProviders.join(', ')}`,
+      `Invalid aiProvider: ${config.generation.aiProvider}. Must be: anthropic`,
     );
   }
 
