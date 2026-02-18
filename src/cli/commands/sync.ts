@@ -1,4 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
@@ -6,6 +5,7 @@ import { StaticDocGenerator } from '../../generator/static-doc-generator.js';
 import { GraphBuilder } from '../../graph/graph-builder.js';
 import { entryPoints } from '../../graph/graph-query.js';
 import { GraphStore } from '../../graph/graph-store.js';
+import { loadConfig } from '../utils/config.js';
 import { findSourceFiles } from '../utils/next-suggestion.js';
 
 export function registerSyncCommand(cli: CAC) {
@@ -29,7 +29,7 @@ export function registerSyncCommand(cli: CAC) {
         // Find source files
         spinner.start('Finding source files');
 
-        let sourceFiles = findSourceFiles(process.cwd());
+        let sourceFiles = findSourceFiles(process.cwd(), config.scope);
 
         // If a target path is provided, filter to files under that path
         if (target) {
@@ -118,21 +118,4 @@ export function registerSyncCommand(cli: CAC) {
         process.exit(1);
       }
     });
-}
-
-function loadConfig(): { outputDir: string } | null {
-  const configPath = resolve(process.cwd(), '_syncdocs/config.yaml');
-
-  if (!existsSync(configPath)) {
-    return null;
-  }
-
-  const content = readFileSync(configPath, 'utf-8');
-
-  // Simple YAML parser — look for dir: under output:
-  const dirMatch = content.match(/dir:\s*(.+)/);
-
-  return {
-    outputDir: dirMatch ? dirMatch[1].trim() : '_syncdocs',
-  };
 }

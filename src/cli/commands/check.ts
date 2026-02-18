@@ -1,8 +1,9 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
 import { StaleChecker } from '../../checker/index.js';
+import { loadConfig } from '../utils/config.js';
 
 export function registerCheckCommand(cli: CAC) {
   cli.command('check', 'Check if docs are stale').action(async () => {
@@ -96,19 +97,4 @@ function formatStaleReason(reason: 'changed' | 'not-found' | 'file-not-found'): 
 function getRelativePath(absolutePath: string): string {
   const cwd = process.cwd();
   return absolutePath.startsWith(cwd) ? absolutePath.substring(cwd.length + 1) : absolutePath;
-}
-
-function loadConfig(): { outputDir: string } | null {
-  const configPath = resolve(process.cwd(), '_syncdocs/config.yaml');
-
-  if (!existsSync(configPath)) {
-    return null;
-  }
-
-  const content = readFileSync(configPath, 'utf-8');
-  const dirMatch = content.match(/dir:\s*(.+)/);
-
-  return {
-    outputDir: dirMatch ? dirMatch[1].trim() : '_syncdocs',
-  };
 }

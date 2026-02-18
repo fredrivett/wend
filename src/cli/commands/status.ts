@@ -1,7 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
+import { loadConfig } from '../utils/config.js';
 import {
   computeNextCandidate,
   getRelativePath,
@@ -33,7 +32,7 @@ export function registerStatusCommand(cli: CAC) {
         const spinner = p.spinner();
         spinner.start('Finding source files');
 
-        const scan = await scanProjectAsync(config.outputDir, (message) => {
+        const scan = await scanProjectAsync(config.outputDir, config.scope, (message) => {
           spinner.message(message);
         });
 
@@ -97,25 +96,4 @@ export function registerStatusCommand(cli: CAC) {
         process.exit(1);
       }
     });
-}
-
-function loadConfig(): {
-  outputDir: string;
-  includes?: string[];
-  excludes?: string[];
-} | null {
-  const configPath = resolve(process.cwd(), '_syncdocs/config.yaml');
-
-  if (!existsSync(configPath)) {
-    return null;
-  }
-
-  const content = readFileSync(configPath, 'utf-8');
-
-  // Simple YAML parser for our config
-  const outputDirMatch = content.match(/outputDir:\s*(.+)/);
-
-  return {
-    outputDir: outputDirMatch ? outputDirMatch[1].trim() : '_syncdocs',
-  };
 }

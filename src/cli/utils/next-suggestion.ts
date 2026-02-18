@@ -1,9 +1,11 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { readdir, stat } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import * as p from '@clack/prompts';
+import picomatch from 'picomatch';
 import { DocParser } from '../../checker/doc-parser.js';
 import { TypeScriptExtractor } from '../../extractor/index.js';
+import type { SyncdocsConfig } from './config.js';
 
 export interface NextCandidate {
   file: string;
@@ -72,10 +74,10 @@ export interface ProjectScan {
 /**
  * Scan the project and return coverage data.
  */
-export function scanProject(outputDir: string): ProjectScan {
+export function scanProject(outputDir: string, scope: SyncdocsConfig['scope']): ProjectScan {
   const docsDir = resolve(process.cwd(), outputDir);
 
-  const sourceFiles = findSourceFiles(process.cwd());
+  const sourceFiles = findSourceFiles(process.cwd(), scope);
   const allSymbols: { file: string; symbol: { name: string } }[] = [];
 
   if (sourceFiles.length > 0) {
@@ -135,12 +137,13 @@ const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
  */
 export async function scanProjectAsync(
   outputDir: string,
+  scope: SyncdocsConfig['scope'],
   onProgress?: (message: string) => void,
 ): Promise<ProjectScan> {
   const docsDir = resolve(process.cwd(), outputDir);
 
   // Phase 1: find source files (async fs, yields naturally at each I/O)
-  const sourceFiles = await findSourceFilesAsync(process.cwd());
+  const sourceFiles = await findSourceFilesAsync(process.cwd(), scope);
 
   const allSymbols: { file: string; symbol: { name: string } }[] = [];
 
@@ -202,30 +205,29 @@ export async function scanProjectAsync(
   };
 }
 
-async function findSourceFilesAsync(rootDir: string): Promise<string[]> {
+async function findSourceFilesAsync(
+  rootDir: string,
+  scope: SyncdocsConfig['scope'],
+): Promise<string[]> {
+  const isIncluded = picomatch(scope.include);
+  const isExcluded = picomatch(scope.exclude);
   const files: string[] = [];
-  const skipDirs = new Set(['node_modules', '.git', 'dist', 'build', '_syncdocs']);
-  const sourceExts = new Set(['.ts', '.tsx', '.js', '.jsx']);
-  const testPatterns = ['.test.ts', '.test.tsx', '.test.js', '.test.jsx', '.spec.ts', '.spec.tsx'];
 
   const walk = async (dir: string) => {
     const items = await readdir(dir);
 
     for (const item of items) {
+      if (item === '.git' || item === 'node_modules') continue;
       const fullPath = join(dir, item);
       const s = await stat(fullPath);
 
       if (s.isDirectory()) {
-        if (skipDirs.has(item)) continue;
         await walk(fullPath);
       } else if (s.isFile()) {
-        const hasSourceExt = sourceExts.has(fullPath.slice(fullPath.lastIndexOf('.')));
-        if (!hasSourceExt) continue;
-
-        const isTest = testPatterns.some((p) => fullPath.endsWith(p));
-        if (isTest) continue;
-
-        files.push(fullPath);
+        const rel = relative(rootDir, fullPath);
+        if (isIncluded(rel) && !isExcluded(rel)) {
+          files.push(fullPath);
+        }
       }
     }
   };
@@ -267,8 +269,8 @@ export function renderCoverageStats(scan: ProjectScan): void {
  * Self-contained: scan the project, show coverage stats and next suggestion.
  * Use this from commands that don't already have scanning data (e.g. generate).
  */
-export function showCoverageAndSuggestion(outputDir: string): void {
-  const scan = scanProject(outputDir);
+export function showCoverageAndSuggestion(outputDir: string, scope: SyncdocsConfig['scope']): void {
+  const scan = scanProject(outputDir, scope);
   if (scan.sourceFiles.length === 0) return;
 
   renderCoverageStats(scan);
@@ -288,47 +290,24 @@ export function getRelativePath(absolutePath: string): string {
   return absolutePath.startsWith(cwd) ? absolutePath.substring(cwd.length + 1) : absolutePath;
 }
 
-export function findSourceFiles(rootDir: string): string[] {
+export function findSourceFiles(rootDir: string, scope: SyncdocsConfig['scope']): string[] {
+  const isIncluded = picomatch(scope.include);
+  const isExcluded = picomatch(scope.exclude);
   const files: string[] = [];
 
   const walk = (dir: string) => {
     const items = readdirSync(dir);
 
     for (const item of items) {
+      if (item === '.git' || item === 'node_modules') continue;
       const fullPath = join(dir, item);
-      const stat = statSync(fullPath);
+      const s = statSync(fullPath);
 
-      if (stat.isDirectory()) {
-        if (
-          item.startsWith('.') ||
-          item === 'node_modules' ||
-          item === 'dist' ||
-          item === 'build' ||
-          item === 'coverage' ||
-          item === 'storybook-static' ||
-          item === '_syncdocs' ||
-          item === '__generated__'
-        ) {
-          continue;
-        }
+      if (s.isDirectory()) {
         walk(fullPath);
-      } else if (stat.isFile()) {
-        if (
-          fullPath.endsWith('.ts') ||
-          fullPath.endsWith('.tsx') ||
-          fullPath.endsWith('.js') ||
-          fullPath.endsWith('.jsx')
-        ) {
-          if (
-            fullPath.endsWith('.test.ts') ||
-            fullPath.endsWith('.test.tsx') ||
-            fullPath.endsWith('.test.js') ||
-            fullPath.endsWith('.test.jsx') ||
-            fullPath.endsWith('.spec.ts') ||
-            fullPath.endsWith('.spec.tsx')
-          ) {
-            continue;
-          }
+      } else if (s.isFile()) {
+        const rel = relative(rootDir, fullPath);
+        if (isIncluded(rel) && !isExcluded(rel)) {
           files.push(fullPath);
         }
       }

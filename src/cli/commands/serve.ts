@@ -1,9 +1,8 @@
 import { exec } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
 import { startServer } from '../../server/index.js';
+import { loadConfig } from '../utils/config.js';
 
 interface ServeOptions {
   port?: number;
@@ -56,16 +55,4 @@ export function registerServeCommand(cli: CAC) {
         process.exit(1);
       }
     });
-}
-
-function loadConfig(): { outputDir: string } | null {
-  const configPath = resolve(process.cwd(), '_syncdocs/config.yaml');
-  if (!existsSync(configPath)) return null;
-
-  const content = readFileSync(configPath, 'utf-8');
-  const outputDirMatch = content.match(/outputDir:\s*(.+)/);
-
-  return {
-    outputDir: outputDirMatch ? outputDirMatch[1].trim() : '_syncdocs',
-  };
 }
