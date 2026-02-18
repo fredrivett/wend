@@ -1,3 +1,30 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --background: oklch(100% 0 0);
+  --foreground: oklch(14.5% 0.015 285.82);
+  --muted: oklch(96.7% 0.003 264.54);
+  --muted-foreground: oklch(55.1% 0.027 264.36);
+  --border: oklch(92.8% 0.006 264.53);
+  --ring: oklch(70.7% 0.022 261.33);
+  --secondary: oklch(96.7% 0.003 264.54);
+  --secondary-foreground: oklch(21% 0.034 264.66);
+  --radius: 0.625rem;
+}

@@ -9,6 +9,11 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   root: __dirname,
   base: '/',
+  resolve: {
+    alias: {
+      '@': __dirname,
+    },
+  },
   build: {
     outDir: resolve(__dirname, '../../../dist/viewer-dist'),
     emptyOutDir: true,
