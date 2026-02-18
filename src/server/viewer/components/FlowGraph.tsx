@@ -12,7 +12,8 @@ import ELK, { type ElkNode } from 'elkjs/lib/elk.bundled.js';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import '@xyflow/react/dist/style.css';
-import type { FlowGraph as FlowGraphData } from '../types';
+import type { FlowGraph as FlowGraphData, GraphNode } from '../types';
+import { DocPanel } from './DocPanel';
 import { FlowControls } from './FlowControls';
 import { nodeTypes } from './NodeTypes';
 
@@ -106,6 +107,7 @@ export function FlowGraph({ graph }: FlowGraphProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const entryPoints = useMemo(() => graph.nodes.filter((n) => n.entryType), [graph.nodes]);
@@ -161,7 +163,13 @@ export function FlowGraph({ graph }: FlowGraphProps) {
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
       const graphNode = graph.nodes.find((n) => n.id === node.id);
-      if (graphNode?.entryType) {
+      if (!graphNode) return;
+
+      // Toggle doc panel for any node
+      setSelectedNode((prev) => (prev?.id === graphNode.id ? null : graphNode));
+
+      // Entry points also toggle flow highlighting
+      if (graphNode.entryType) {
         setSelectedEntry((prev) => (prev === node.id ? null : node.id));
       }
     },
@@ -201,6 +209,7 @@ export function FlowGraph({ graph }: FlowGraphProps) {
           maskColor="rgba(0,0,0,0.05)"
         />
       </ReactFlow>
+      <DocPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
     </div>
   );
 }
