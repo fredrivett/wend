@@ -84,7 +84,7 @@ export function DocPanel({ node, onClose }: DocPanelProps) {
             <div className="flex items-center gap-1">
               {doc && (
                 <a
-                  href={`/#/doc/${encodeURIComponent(docPath)}`}
+                  href={`/docs#/doc/${encodeURIComponent(docPath)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
@@ -156,7 +156,7 @@ export function DocPanel({ node, onClose }: DocPanelProps) {
         {doc && (
           <SheetOrDrawerFooter>
             <a
-              href={`/#/doc/${encodeURIComponent(docPath)}`}
+              href={`/docs#/doc/${encodeURIComponent(docPath)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"

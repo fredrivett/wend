@@ -124,7 +124,7 @@ export function generateDependencyGraph(entry: SymbolEntry, index: SymbolIndex):
     const targetId = safeId(name);
     lines.push(`    ${targetId}[${name}]`);
     lines.push(`    ${currentId} --> ${targetId}`);
-    lines.push(`    click ${targetId} href "#/doc/${encodeURIComponent(target.docPath)}"`);
+    lines.push(`    click ${targetId} href "/docs#/doc/${encodeURIComponent(target.docPath)}"`);
   }
 
   return lines.join('\n');
@@ -219,7 +219,8 @@ export async function startServer(outputDir: string, port: number) {
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? '/', `http://localhost:${port}`);
 
-    if (url.pathname === '/') {
+    // Serve old docs template at /docs
+    if (url.pathname === '/docs' || url.pathname === '/docs/') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(template);
       return;
@@ -276,20 +277,15 @@ export async function startServer(outputDir: string, port: number) {
       return;
     }
 
-    // Serve viewer at /viewer
-    if (url.pathname === '/viewer' || url.pathname === '/viewer/') {
-      const indexPath = resolve(viewerDistDir, 'index.html');
-      if (serveStaticFile(indexPath, res)) return;
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Viewer not built. Run: npm run build:viewer');
-      return;
-    }
-
     // Serve viewer assets (JS, CSS, etc.)
-    if (url.pathname.startsWith('/viewer/')) {
-      const assetPath = resolve(viewerDistDir, url.pathname.replace('/viewer/', ''));
+    if (url.pathname.startsWith('/assets/')) {
+      const assetPath = resolve(viewerDistDir, url.pathname.slice(1));
       if (serveStaticFile(assetPath, res)) return;
     }
+
+    // Serve viewer (SPA fallback) at root
+    const indexPath = resolve(viewerDistDir, 'index.html');
+    if (serveStaticFile(indexPath, res)) return;
 
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not found');

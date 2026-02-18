@@ -7,7 +7,8 @@
     "syncdocs": "./dist/index.mjs"
   },
   "scripts": {
-    "dev": "tsdown src/cli/index.ts --watch",
+    "dev": "bash scripts/run.sh",
+    "dev:cli": "tsdown src/cli/index.ts --watch",
     "build": "tsdown src/cli/index.ts && npm run build:viewer",
     "build:viewer": "vite build --config src/server/viewer/vite.config.ts",
     "syncdocs": "node dist/index.mjs",

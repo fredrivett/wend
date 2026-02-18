@@ -7,12 +7,14 @@ import { startServer } from '../../server/index.js';
 
 interface ServeOptions {
   port?: number;
+  open?: boolean;
 }
 
 export function registerServeCommand(cli: CAC) {
   cli
     .command('serve', 'Start interactive documentation viewer')
     .option('--port <number>', 'Port to run server on (default: 3456)')
+    .option('--open', 'Auto-open browser (default: true)')
     .example('syncdocs serve')
     .example('syncdocs serve --port 8080')
     .action(async (options: ServeOptions) => {
@@ -33,14 +35,16 @@ export function registerServeCommand(cli: CAC) {
         const { url } = await startServer(config.outputDir, port);
         spinner.stop(`Server running at ${url}`);
 
-        // Auto-open in browser
-        const openCmd =
-          process.platform === 'darwin'
-            ? 'open'
-            : process.platform === 'win32'
-              ? 'start'
-              : 'xdg-open';
-        exec(`${openCmd} ${url}`);
+        // Auto-open in browser (unless --no-open)
+        if (options.open !== false) {
+          const openCmd =
+            process.platform === 'darwin'
+              ? 'open'
+              : process.platform === 'win32'
+                ? 'start'
+                : 'xdg-open';
+          exec(`${openCmd} ${url}`);
+        }
 
         p.log.message('Press Ctrl+C to stop');
 
