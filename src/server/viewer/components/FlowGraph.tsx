@@ -72,19 +72,25 @@ function toReactFlowEdges(graphEdges: FlowGraphData['edges']): Edge[] {
   });
 }
 
+type SizeCache = Map<string, { width: number; height: number }>;
+
 async function runElkLayout(
   currentNodes: Node[],
   graphEdges: FlowGraphData['edges'],
   layoutOptions: LayoutOptions,
+  sizeCache?: SizeCache,
 ): Promise<Map<string, { x: number; y: number }>> {
   const elkGraph: ElkNode = {
     id: 'root',
     layoutOptions: { ...layoutOptions },
-    children: currentNodes.map((node) => ({
-      id: node.id,
-      width: node.measured?.width || 150,
-      height: node.measured?.height || 60,
-    })),
+    children: currentNodes.map((node) => {
+      const cached = sizeCache?.get(node.id);
+      return {
+        id: node.id,
+        width: cached?.width || node.measured?.width || 150,
+        height: cached?.height || node.measured?.height || 60,
+      };
+    }),
     edges: graphEdges.map((edge) => ({
       id: edge.id,
       sources: [edge.source],
@@ -116,6 +122,7 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
   const visibleGraphRef = useRef<FlowGraphData | null>(null);
+  const sizeCache = useRef<SizeCache>(new Map());
 
   const entryPoints = useMemo(() => graph.nodes.filter((n) => n.entryType), [graph.nodes]);
 
@@ -184,21 +191,51 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
     };
   }, [filteredGraph, highlightedIds]);
 
-  // Pass 1: when visibleGraph changes, render nodes at origin so React Flow can measure them
+  // When visibleGraph changes: use cached sizes for instant layout, or fall back to two-pass measurement
   useEffect(() => {
     visibleGraphRef.current = visibleGraph;
-    setNodes(visibleGraph.nodes.map(toReactFlowNode));
+    const rfNodes = visibleGraph.nodes.map(toReactFlowNode);
     setEdges(toReactFlowEdges(visibleGraph.edges));
-    setNeedsLayout(true);
-  }, [visibleGraph, setNodes, setEdges]);
 
-  // Pass 2: once nodes are measured, run ELK with real dimensions and apply positions
+    const allCached = visibleGraph.nodes.every((n) => sizeCache.current.has(n.id));
+    if (allCached && visibleGraph.nodes.length > 0) {
+      // Fast path: compute positions before rendering so nodes never appear at origin
+      runElkLayout(rfNodes, visibleGraph.edges, layoutOptions, sizeCache.current).then(
+        (positions) => {
+          const positioned = rfNodes.map((node) => {
+            const pos = positions.get(node.id);
+            return pos ? { ...node, position: pos } : node;
+          });
+          setNodes(positioned);
+          requestAnimationFrame(() => {
+            fitView({ padding: 0.15 });
+            requestAnimationFrame(() => {
+              onLayoutReady?.();
+            });
+          });
+        },
+      );
+    } else {
+      // Slow path: render at origin so React Flow can measure, then layout in Pass 2
+      setNodes(rfNodes);
+      setNeedsLayout(true);
+    }
+  }, [visibleGraph, setNodes, setEdges, layoutOptions, fitView, onLayoutReady]);
+
+  // Pass 2: once nodes are measured, cache sizes and run ELK with real dimensions
   useEffect(() => {
     if (!needsLayout || !nodesInitialized || !visibleGraphRef.current) return;
     setNeedsLayout(false);
 
+    // Cache measured sizes for future fast-path layouts
+    for (const node of nodes) {
+      if (node.measured?.width && node.measured?.height) {
+        sizeCache.current.set(node.id, { width: node.measured.width, height: node.measured.height });
+      }
+    }
+
     const currentGraph = visibleGraphRef.current;
-    runElkLayout(nodes, currentGraph.edges, layoutOptions).then((positions) => {
+    runElkLayout(nodes, currentGraph.edges, layoutOptions, sizeCache.current).then((positions) => {
       setNodes((prev) =>
         prev.map((node) => {
           const pos = positions.get(node.id);
@@ -217,7 +254,7 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
   // Re-layout when layout options change (without re-measuring)
   useEffect(() => {
     if (!visibleGraphRef.current || needsLayout) return;
-    runElkLayout(nodes, visibleGraphRef.current.edges, layoutOptions).then((positions) => {
+    runElkLayout(nodes, visibleGraphRef.current.edges, layoutOptions, sizeCache.current).then((positions) => {
       setNodes((prev) =>
         prev.map((node) => {
           const pos = positions.get(node.id);
