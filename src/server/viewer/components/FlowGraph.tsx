@@ -7,17 +7,19 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
+  useNodesInitialized,
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
 import ELK, { type ElkNode } from 'elkjs/lib/elk.bundled.js';
 import type React from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
 import type { FlowGraph as FlowGraphData, GraphNode } from '../types';
 import { DocPanel } from './DocPanel';
 import { FlowControls } from './FlowControls';
 import { type LayoutOptions, LayoutSettings, defaultLayoutOptions } from './LayoutSettings';
+import { LoadingSpinner } from './LoadingSpinner';
 import { nodeTypes } from './NodeTypes';
 
 const elk = new ELK();
@@ -32,60 +34,33 @@ const edgeStyleByType: Record<string, React.CSSProperties> = {
   'middleware-chain': { stroke: '#06b6d4', strokeDasharray: '4 2' },
 };
 
-async function layoutGraph(graphData: FlowGraphData, layoutOptions: LayoutOptions) {
-  const elkGraph: ElkNode = {
-    id: 'root',
-    layoutOptions: { ...layoutOptions },
-    children: graphData.nodes.map((node) => {
-      const isComponent = node.kind === 'component';
-      const isHook = node.kind === 'function' && /^use[A-Z]/.test(node.name);
-      return {
-        id: node.id,
-        width: node.entryType ? 200 : isComponent || isHook ? 170 : 160,
-        height: node.entryType ? 90 : isComponent || isHook ? 80 : 70,
-      };
-    }),
-    edges: graphData.edges.map((edge) => ({
-      id: edge.id,
-      sources: [edge.source],
-      targets: [edge.target],
-    })),
+function getNodeType(node: GraphNode): string {
+  if (node.entryType) return 'entryPoint';
+  if (node.kind === 'component') return 'componentNode';
+  if (node.kind === 'function' && /^use[A-Z]/.test(node.name)) return 'hookNode';
+  return 'functionNode';
+}
+
+function toReactFlowNode(node: GraphNode): Node {
+  return {
+    id: node.id,
+    type: getNodeType(node),
+    position: { x: 0, y: 0 },
+    data: {
+      label: node.name,
+      kind: node.kind,
+      filePath: node.filePath,
+      isAsync: node.isAsync,
+      entryType: node.entryType,
+      metadata: node.metadata,
+      highlighted: true,
+    },
   };
+}
 
-  const layout = await elk.layout(elkGraph);
-
-  const nodeMap = new Map(graphData.nodes.map((n) => [n.id, n]));
-  const nodes: Node[] = (layout.children || [])
-    .map((elkNode) => {
-      const graphNode = nodeMap.get(elkNode.id);
-      if (!graphNode) return null;
-
-      return {
-        id: graphNode.id,
-        type: graphNode.entryType
-          ? 'entryPoint'
-          : graphNode.kind === 'component'
-            ? 'componentNode'
-            : graphNode.kind === 'function' && /^use[A-Z]/.test(graphNode.name)
-              ? 'hookNode'
-              : 'functionNode',
-        position: { x: elkNode.x || 0, y: elkNode.y || 0 },
-        data: {
-          label: graphNode.name,
-          kind: graphNode.kind,
-          filePath: graphNode.filePath,
-          isAsync: graphNode.isAsync,
-          entryType: graphNode.entryType,
-          metadata: graphNode.metadata,
-          highlighted: true,
-        },
-      };
-    })
-    .filter((n): n is Node => n !== null);
-
-  const edges: Edge[] = graphData.edges.map((edge) => {
+function toReactFlowEdges(graphEdges: FlowGraphData['edges']): Edge[] {
+  return graphEdges.map((edge) => {
     const style = edgeStyleByType[edge.type] || { stroke: '#9ca3af' };
-
     return {
       id: edge.id,
       source: edge.source,
@@ -96,8 +71,34 @@ async function layoutGraph(graphData: FlowGraphData, layoutOptions: LayoutOption
       labelStyle: { fontSize: 10, fill: '#6b7280' },
     };
   });
+}
 
-  return { nodes, edges };
+async function runElkLayout(
+  currentNodes: Node[],
+  graphEdges: FlowGraphData['edges'],
+  layoutOptions: LayoutOptions,
+): Promise<Map<string, { x: number; y: number }>> {
+  const elkGraph: ElkNode = {
+    id: 'root',
+    layoutOptions: { ...layoutOptions },
+    children: currentNodes.map((node) => ({
+      id: node.id,
+      width: node.measured?.width || 150,
+      height: node.measured?.height || 60,
+    })),
+    edges: graphEdges.map((edge) => ({
+      id: edge.id,
+      sources: [edge.source],
+      targets: [edge.target],
+    })),
+  };
+
+  const layout = await elk.layout(elkGraph);
+  const positions = new Map<string, { x: number; y: number }>();
+  for (const child of layout.children || []) {
+    positions.set(child.id, { x: child.x || 0, y: child.y || 0 });
+  }
+  return positions;
 }
 
 interface FlowGraphProps {
@@ -111,17 +112,19 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(defaultLayoutOptions);
+  const [needsLayout, setNeedsLayout] = useState(false);
+  const [layoutReady, setLayoutReady] = useState(false);
   const { fitView } = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
+  const visibleGraphRef = useRef<FlowGraphData | null>(null);
 
   const entryPoints = useMemo(() => graph.nodes.filter((n) => n.entryType), [graph.nodes]);
 
   // Compute connected nodes: trace callers upward and callees downward separately
-  // so we don't leak into sibling branches
   const highlightedIds = useMemo(() => {
     if (!selectedEntry) return null;
     const connected = new Set<string>([selectedEntry]);
 
-    // Trace downstream (callees)
     const downQueue = [selectedEntry];
     while (downQueue.length > 0) {
       const current = downQueue.shift() as string;
@@ -133,7 +136,6 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
       }
     }
 
-    // Trace upstream (callers)
     const upQueue = [selectedEntry];
     while (upQueue.length > 0) {
       const current = upQueue.shift() as string;
@@ -171,7 +173,7 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
     };
   }, [graph, searchQuery]);
 
-  // Filter to only highlighted nodes for layout
+  // Filter to only highlighted nodes
   const visibleGraph = useMemo(() => {
     if (!highlightedIds) return filteredGraph;
     return {
@@ -183,26 +185,64 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
     };
   }, [filteredGraph, highlightedIds]);
 
+  // Pass 1: when visibleGraph changes, render nodes at origin so React Flow can measure them
   useEffect(() => {
-    layoutGraph(visibleGraph, layoutOptions).then(({ nodes: n, edges: e }) => {
-      setNodes(n);
-      setEdges(e);
-      // Wait for React to render new nodes, then fit view
+    visibleGraphRef.current = visibleGraph;
+    setLayoutReady(false);
+    setNodes(visibleGraph.nodes.map(toReactFlowNode));
+    setEdges(toReactFlowEdges(visibleGraph.edges));
+    setNeedsLayout(true);
+  }, [visibleGraph, setNodes, setEdges]);
+
+  // Pass 2: once nodes are measured, run ELK with real dimensions and apply positions
+  useEffect(() => {
+    if (!needsLayout || !nodesInitialized || !visibleGraphRef.current) return;
+    setNeedsLayout(false);
+
+    const currentGraph = visibleGraphRef.current;
+    runElkLayout(nodes, currentGraph.edges, layoutOptions).then((positions) => {
+      setNodes((prev) =>
+        prev.map((node) => {
+          const pos = positions.get(node.id);
+          return pos ? { ...node, position: pos } : node;
+        }),
+      );
       requestAnimationFrame(() => {
-        fitView({ padding: 0.15, duration: 200 });
+        fitView({ padding: 0.15 });
+        requestAnimationFrame(() => {
+          setLayoutReady(true);
+        });
       });
     });
-  }, [visibleGraph, layoutOptions, setNodes, setEdges, fitView]);
+  }, [needsLayout, nodesInitialized, nodes, layoutOptions, setNodes, fitView]);
+
+  // Re-layout when layout options change (without re-measuring)
+  useEffect(() => {
+    if (!visibleGraphRef.current || needsLayout) return;
+    runElkLayout(nodes, visibleGraphRef.current.edges, layoutOptions).then((positions) => {
+      setNodes((prev) =>
+        prev.map((node) => {
+          const pos = positions.get(node.id);
+          return pos ? { ...node, position: pos } : node;
+        }),
+      );
+      requestAnimationFrame(() => {
+        fitView({ padding: 0.15 });
+        requestAnimationFrame(() => {
+          setLayoutReady(true);
+        });
+      });
+    });
+    // Only re-run when layoutOptions change, not on every nodes change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layoutOptions]);
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
       const graphNode = graph.nodes.find((n) => n.id === node.id);
       if (!graphNode) return;
 
-      // Toggle doc panel for any node
       setSelectedNode((prev) => (prev?.id === graphNode.id ? null : graphNode));
-
-      // Toggle flow highlighting for any node
       setSelectedEntry((prev) => (prev === node.id ? null : node.id));
     },
     [graph.nodes],
@@ -210,6 +250,18 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      {!layoutReady && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            background: '#ffffff',
+          }}
+        >
+          <LoadingSpinner />
+        </div>
+      )}
       <FlowControls
         entryPoints={entryPoints}
         selectedEntry={selectedEntry}

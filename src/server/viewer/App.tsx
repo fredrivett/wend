@@ -1,6 +1,7 @@
 import { ReactFlowProvider } from '@xyflow/react';
 import { useEffect, useState } from 'react';
 import { FlowGraph } from './components/FlowGraph';
+import { LoadingSpinner } from './components/LoadingSpinner';
 import type { FlowGraph as FlowGraphData } from './types';
 
 export default function App() {
@@ -25,20 +26,7 @@ export default function App() {
   }, []);
 
   if (loading) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-          color: '#6b7280',
-        }}
-      >
-        Loading graph...
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error) {
