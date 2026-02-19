@@ -19,7 +19,6 @@ import type { FlowGraph as FlowGraphData, GraphNode } from '../types';
 import { DocPanel } from './DocPanel';
 import { FlowControls } from './FlowControls';
 import { type LayoutOptions, LayoutSettings, defaultLayoutOptions } from './LayoutSettings';
-import { LoadingSpinner } from './LoadingSpinner';
 import { nodeTypes } from './NodeTypes';
 
 const elk = new ELK();
@@ -103,9 +102,10 @@ async function runElkLayout(
 
 interface FlowGraphProps {
   graph: FlowGraphData;
+  onLayoutReady?: () => void;
 }
 
-function FlowGraphInner({ graph }: FlowGraphProps) {
+function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
@@ -113,7 +113,6 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(defaultLayoutOptions);
   const [needsLayout, setNeedsLayout] = useState(false);
-  const [layoutReady, setLayoutReady] = useState(false);
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
   const visibleGraphRef = useRef<FlowGraphData | null>(null);
@@ -188,7 +187,6 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
   // Pass 1: when visibleGraph changes, render nodes at origin so React Flow can measure them
   useEffect(() => {
     visibleGraphRef.current = visibleGraph;
-    setLayoutReady(false);
     setNodes(visibleGraph.nodes.map(toReactFlowNode));
     setEdges(toReactFlowEdges(visibleGraph.edges));
     setNeedsLayout(true);
@@ -210,7 +208,7 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
       requestAnimationFrame(() => {
         fitView({ padding: 0.15 });
         requestAnimationFrame(() => {
-          setLayoutReady(true);
+          onLayoutReady?.();
         });
       });
     });
@@ -229,7 +227,7 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
       requestAnimationFrame(() => {
         fitView({ padding: 0.15 });
         requestAnimationFrame(() => {
-          setLayoutReady(true);
+          onLayoutReady?.();
         });
       });
     });
@@ -250,18 +248,6 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      {!layoutReady && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 20,
-            background: '#ffffff',
-          }}
-        >
-          <LoadingSpinner />
-        </div>
-      )}
       <FlowControls
         entryPoints={entryPoints}
         selectedEntry={selectedEntry}
@@ -299,10 +285,10 @@ function FlowGraphInner({ graph }: FlowGraphProps) {
   );
 }
 
-export function FlowGraph({ graph }: FlowGraphProps) {
+export function FlowGraph({ graph, onLayoutReady }: FlowGraphProps) {
   return (
     <ReactFlowProvider>
-      <FlowGraphInner graph={graph} />
+      <FlowGraphInner graph={graph} onLayoutReady={onLayoutReady} />
     </ReactFlowProvider>
   );
 }

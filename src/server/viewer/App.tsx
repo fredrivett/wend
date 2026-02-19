@@ -1,5 +1,4 @@
-import { ReactFlowProvider } from '@xyflow/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlowGraph } from './components/FlowGraph';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import type { FlowGraph as FlowGraphData } from './types';
@@ -8,6 +7,11 @@ export default function App() {
   const [graph, setGraph] = useState<FlowGraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [layoutReady, setLayoutReady] = useState(false);
+
+  const onLayoutReady = useCallback(() => {
+    setLayoutReady(true);
+  }, []);
 
   useEffect(() => {
     fetch('/api/graph')
@@ -24,10 +28,6 @@ export default function App() {
         setLoading(false);
       });
   }, []);
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
 
   if (error) {
     return (
@@ -56,7 +56,7 @@ export default function App() {
     );
   }
 
-  if (!graph || graph.nodes.length === 0) {
+  if (!loading && (!graph || graph.nodes.length === 0)) {
     return (
       <div
         style={{
@@ -83,8 +83,20 @@ export default function App() {
   }
 
   return (
-    <ReactFlowProvider>
-      <FlowGraph graph={graph} />
-    </ReactFlowProvider>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      {!layoutReady && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            background: '#ffffff',
+          }}
+        >
+          <LoadingSpinner />
+        </div>
+      )}
+      {graph && <FlowGraph graph={graph} onLayoutReady={onLayoutReady} />}
+    </div>
   );
 }
