@@ -374,6 +374,8 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
         availableTypes={availableTypes}
         enabledTypes={enabledTypes}
         onToggleType={onToggleType}
+        onSoloType={(category) => setEnabledTypes(new Set([category]))}
+        onResetTypes={() => setEnabledTypes(null)}
       />
       <div style={{ flex: 1, position: 'relative' }}>
         <LayoutSettings options={layoutOptions} onChange={setLayoutOptions} />

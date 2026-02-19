@@ -13,6 +13,8 @@ interface FlowControlsProps {
   availableTypes: Map<NodeCategory, number>;
   enabledTypes: Set<NodeCategory> | null;
   onToggleType: (category: NodeCategory) => void;
+  onSoloType: (category: NodeCategory) => void;
+  onResetTypes: () => void;
 }
 
 export function FlowControls({
@@ -26,6 +28,8 @@ export function FlowControls({
   availableTypes,
   enabledTypes,
   onToggleType,
+  onSoloType,
+  onResetTypes,
 }: FlowControlsProps) {
   const entryTypeLabels: Record<string, string> = {
     'api-route': 'API',
@@ -48,6 +52,9 @@ export function FlowControls({
         overflow: 'auto',
       }}
     >
+      <style>
+        {`.type-filter-row:hover .only-btn { opacity: 1 !important; }`}
+      </style>
       <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, color: '#111827' }}>
         Syncdocs Flow Graph
       </div>
@@ -74,33 +81,88 @@ export function FlowControls({
 
       {availableTypes.size > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
-            Node Types
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#374151',
+              marginBottom: 6,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <span>Node Types</span>
+            {enabledTypes && (
+              <button
+                type="button"
+                onClick={onResetTypes}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  fontSize: 11,
+                  color: '#9ca3af',
+                  cursor: 'pointer',
+                  fontWeight: 400,
+                }}
+              >
+                reset
+              </button>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {Array.from(availableTypes.entries()).map(([category, count]) => {
               const checked = !enabledTypes || enabledTypes.has(category);
               return (
-                <label
+                <div
                   key={category}
+                  className="type-filter-row"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
                     fontSize: 12,
                     color: '#374151',
-                    cursor: 'pointer',
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => onToggleType(category)}
-                    style={{ margin: 0 }}
-                  />
-                  <span>{getCategoryLabel(category)}</span>
-                  <span style={{ color: '#9ca3af', fontSize: 11 }}>({count})</span>
-                </label>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      cursor: 'pointer',
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => onToggleType(category)}
+                      style={{ margin: 0, flexShrink: 0 }}
+                    />
+                    <span>{getCategoryLabel(category)}</span>
+                    <span style={{ color: '#9ca3af', fontSize: 11 }}>({count})</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="only-btn"
+                    onClick={() => onSoloType(category)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '0 2px',
+                      fontSize: 11,
+                      color: '#9ca3af',
+                      cursor: 'pointer',
+                      opacity: 0,
+                      transition: 'opacity 0.1s',
+                    }}
+                  >
+                    only
+                  </button>
+                </div>
               );
             })}
           </div>
