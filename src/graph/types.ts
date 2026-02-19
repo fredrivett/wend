@@ -5,7 +5,7 @@
 export interface GraphNode {
   id: string; // "src/api/analyze/route.ts:POST"
   name: string;
-  kind: 'function' | 'class' | 'const' | 'method';
+  kind: 'function' | 'class' | 'const' | 'method' | 'component';
   filePath: string;
   entryType?: EntryType;
   isAsync: boolean;

@@ -4,7 +4,7 @@
 
 export interface SymbolInfo {
   name: string;
-  kind: 'function' | 'class' | 'const' | 'method';
+  kind: 'function' | 'class' | 'const' | 'method' | 'component';
   filePath: string;
   params: string;
   body: string;

@@ -9,6 +9,7 @@ import { TypeScriptExtractor } from './typescript-extractor.js';
 
 const TEST_DIR = join(process.cwd(), '.test-tmp');
 const TEST_FILE = join(TEST_DIR, 'test.ts');
+const TEST_TSX_FILE = join(TEST_DIR, 'test.tsx');
 
 describe('TypeScriptExtractor', () => {
   let extractor: TypeScriptExtractor;
@@ -22,9 +23,8 @@ describe('TypeScriptExtractor', () => {
 
   afterEach(() => {
     try {
-      if (existsSync(TEST_FILE)) {
-        unlinkSync(TEST_FILE);
-      }
+      if (existsSync(TEST_FILE)) unlinkSync(TEST_FILE);
+      if (existsSync(TEST_TSX_FILE)) unlinkSync(TEST_TSX_FILE);
     } catch (_e) {
       // Ignore cleanup errors
     }
@@ -754,6 +754,92 @@ export function localHelper() { return 1 }
       // Only named re-exports, not star or local exports
       expect(reExports).toHaveLength(1);
       expect(reExports[0].localName).toBe('useSearch');
+    });
+  });
+
+  describe('React component detection', () => {
+    it('should detect function declaration component in .tsx file', () => {
+      const code = `
+export function UserAvatar({ name }: { name: string }) {
+  return <div className="avatar">{name}</div>
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('component');
+    });
+
+    it('should detect arrow function component in .tsx file', () => {
+      const code = `
+const ProfileCard = ({ user }: Props) => {
+  return <div><span>{user.name}</span></div>
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('component');
+    });
+
+    it('should detect component with JSX fragment', () => {
+      const code = `
+export function Layout({ children }: Props) {
+  return <><header />{children}<footer /></>
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('component');
+    });
+
+    it('should NOT detect lowercase function as component', () => {
+      const code = `
+export function renderItem({ name }: Props) {
+  return <div>{name}</div>
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('function');
+    });
+
+    it('should NOT detect PascalCase function in .ts file as component', () => {
+      const code = `
+export function CreateUser(name: string) {
+  return { id: '1', name }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('function');
+    });
+
+    it('should NOT detect PascalCase function without JSX as component', () => {
+      const code = `
+export function FormatName(first: string, last: string) {
+  return first + ' ' + last
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('function');
     });
   });
 

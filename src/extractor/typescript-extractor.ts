@@ -245,6 +245,28 @@ export class TypeScriptExtractor {
   }
 
   /**
+   * Detect whether a symbol is a React component.
+   * Requires: JSX-capable file (.tsx/.jsx), PascalCase name, and JSX in body.
+   */
+  private isReactComponent(name: string, body: ts.Node | null, filePath: string): boolean {
+    if (!filePath.endsWith('.tsx') && !filePath.endsWith('.jsx')) return false;
+    if (!/^[A-Z]/.test(name)) return false;
+    if (!body) return false;
+    return this.containsJsx(body);
+  }
+
+  private containsJsx(node: ts.Node): boolean {
+    if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) {
+      return true;
+    }
+    let found = false;
+    ts.forEachChild(node, (child) => {
+      if (!found) found = this.containsJsx(child);
+    });
+    return found;
+  }
+
+  /**
    * Extract function declaration
    */
   private extractFunction(node: ts.FunctionDeclaration, sourceFile: ts.SourceFile): SymbolInfo {
@@ -262,7 +284,9 @@ export class TypeScriptExtractor {
 
     return {
       name,
-      kind: 'function',
+      kind: this.isReactComponent(name, node.body ?? null, sourceFile.fileName)
+        ? 'component'
+        : 'function',
       filePath: sourceFile.fileName,
       params,
       body,
@@ -300,9 +324,12 @@ export class TypeScriptExtractor {
     const { line: startLine } = sourceFile.getLineAndCharacterOfPosition(decl.pos);
     const { line: endLine } = sourceFile.getLineAndCharacterOfPosition(decl.end);
 
+    const funcBody = ts.isArrowFunction(func) ? func.body : (func as ts.FunctionExpression).body;
     return {
       name,
-      kind: 'const',
+      kind: this.isReactComponent(name, funcBody ?? null, sourceFile.fileName)
+        ? 'component'
+        : 'const',
       filePath: sourceFile.fileName,
       params,
       body,
