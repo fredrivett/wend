@@ -129,7 +129,14 @@ export class GraphBuilder {
         let order = 0;
 
         for (const callSite of callSites) {
-          const targetId = this.resolveCallSite(callSite, filePath, symbols, imports, sourceFiles);
+          const targetId = this.resolveCallSite(
+            callSite,
+            filePath,
+            symbols,
+            imports,
+            sourceFiles,
+            nodeMap,
+          );
 
           if (targetId && nodeMap.has(targetId)) {
             edges.push({
@@ -193,6 +200,8 @@ export class GraphBuilder {
    * 2. Cross-file match — find an import whose local name matches, then
    *    resolve the import path and look up the original symbol name in the
    *    target file's symbols
+   * 3. Re-export follow — if the resolved file is a barrel that re-exports
+   *    the symbol from another file, follow the chain
    */
   private resolveCallSite(
     callSite: CallSite,
@@ -200,6 +209,7 @@ export class GraphBuilder {
     sameFileSymbols: SymbolInfo[],
     imports: ImportInfo[],
     sourceFiles: string[],
+    nodeMap: Map<string, GraphNode>,
   ): string | null {
     const { name } = callSite;
 
@@ -221,8 +231,49 @@ export class GraphBuilder {
     if (!sourceFiles.includes(resolvedPath)) return null;
 
     const targetRelPath = getRelativePath(resolvedPath);
-    // The target symbol name is the original export name (handles renaming)
-    return `${targetRelPath}:${importMatch.originalName}`;
+    const symbolName = importMatch.originalName;
+    const directId = `${targetRelPath}:${symbolName}`;
+
+    // If the symbol is defined directly in the resolved file, use it
+    if (nodeMap.has(directId)) {
+      return directId;
+    }
+
+    // 3. Follow re-exports — the resolved file may be a barrel that re-exports
+    //    the symbol from another file
+    return this.followReExport(resolvedPath, symbolName, sourceFiles, nodeMap);
+  }
+
+  /**
+   * Follow a re-export chain to find the actual defining file for a symbol.
+   * e.g. index.ts: export { useSearch } from "./use-search" → use-search.ts
+   */
+  private followReExport(
+    barrelPath: string,
+    symbolName: string,
+    sourceFiles: string[],
+    nodeMap: Map<string, GraphNode>,
+    depth = 0,
+  ): string | null {
+    // Guard against circular re-exports
+    if (depth > 5) return null;
+
+    const reExports = this.extractor.extractReExports(barrelPath);
+    const match = reExports.find((re) => re.localName === symbolName);
+    if (!match) return null;
+
+    const resolvedPath = resolveImportPath(barrelPath, match.source);
+    if (!resolvedPath || !sourceFiles.includes(resolvedPath)) return null;
+
+    const targetRelPath = getRelativePath(resolvedPath);
+    const targetId = `${targetRelPath}:${match.originalName}`;
+
+    if (nodeMap.has(targetId)) {
+      return targetId;
+    }
+
+    // The target might itself be another barrel — follow recursively
+    return this.followReExport(resolvedPath, match.originalName, sourceFiles, nodeMap, depth + 1);
   }
 
   /**

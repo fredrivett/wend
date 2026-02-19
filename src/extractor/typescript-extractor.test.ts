@@ -665,6 +665,98 @@ function standalone() { return 42 }
     });
   });
 
+  describe('extractReExports', () => {
+    it('should extract named re-exports', () => {
+      const code = `
+export { useSearch } from "./use-search"
+export { parseParams, createFilter } from "./types"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(3);
+      expect(reExports[0]).toMatchObject({
+        localName: 'useSearch',
+        originalName: 'useSearch',
+        source: './use-search',
+      });
+      expect(reExports[1]).toMatchObject({
+        localName: 'parseParams',
+        originalName: 'parseParams',
+        source: './types',
+      });
+    });
+
+    it('should handle renamed re-exports', () => {
+      const code = `
+export { internalFn as publicFn } from "./internal"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(1);
+      expect(reExports[0]).toMatchObject({
+        localName: 'publicFn',
+        originalName: 'internalFn',
+        source: './internal',
+      });
+    });
+
+    it('should skip type-only re-exports', () => {
+      const code = `
+export type { SearchState } from "./types"
+export { useSearch } from "./use-search"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(1);
+      expect(reExports[0].localName).toBe('useSearch');
+    });
+
+    it('should skip individual type-only elements in re-exports', () => {
+      const code = `
+export { type SearchState, useSearch } from "./use-search"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(1);
+      expect(reExports[0].localName).toBe('useSearch');
+    });
+
+    it('should return empty for files with no re-exports', () => {
+      const code = `
+export function foo() { return 1 }
+import { bar } from "./bar"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(0);
+    });
+
+    it('should handle mixed exports and re-exports', () => {
+      const code = `
+export * from "./api"
+export { useSearch } from "./use-search"
+export function localHelper() { return 1 }
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      // Only named re-exports, not star or local exports
+      expect(reExports).toHaveLength(1);
+      expect(reExports[0].localName).toBe('useSearch');
+    });
+  });
+
   describe('TypeScript-specific Features', () => {
     it('should handle generic functions', () => {
       const code = `

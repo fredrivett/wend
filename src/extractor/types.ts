@@ -25,6 +25,12 @@ export interface ImportInfo {
   isDefault: boolean;
 }
 
+export interface ReExportInfo {
+  localName: string; // exported name (e.g. "useSearch")
+  originalName: string; // original name in source file (differs when renamed: export { foo as bar })
+  source: string; // module specifier (e.g. "./use-search")
+}
+
 export interface ExtractionResult {
   symbols: SymbolInfo[];
   errors: string[];

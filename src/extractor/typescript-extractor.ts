@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { ExtractionError } from '../cli/utils/errors.js';
-import type { CallSite, ExtractionResult, ImportInfo, SymbolInfo } from './types.js';
+import type { CallSite, ExtractionResult, ImportInfo, ReExportInfo, SymbolInfo } from './types.js';
 
 export class TypeScriptExtractor {
   /**
@@ -154,6 +154,44 @@ export class TypeScriptExtractor {
     });
 
     return imports;
+  }
+
+  /**
+   * Extract re-export declarations from a file.
+   * Handles: export { Foo } from "./bar", export { Foo as Bar } from "./bar"
+   */
+  extractReExports(filePath: string): ReExportInfo[] {
+    const sourceText = readFileSync(filePath, 'utf-8');
+    const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true);
+
+    const reExports: ReExportInfo[] = [];
+
+    ts.forEachChild(sourceFile, (node) => {
+      if (!ts.isExportDeclaration(node)) return;
+      if (!node.moduleSpecifier || !ts.isStringLiteral(node.moduleSpecifier)) return;
+
+      const source = node.moduleSpecifier.text;
+
+      // Skip type-only exports: export type { Foo } from "..."
+      if (node.isTypeOnly) return;
+
+      if (node.exportClause && ts.isNamedExports(node.exportClause)) {
+        // Named re-exports: export { Foo, Bar as Baz } from "./bar"
+        for (const element of node.exportClause.elements) {
+          if (element.isTypeOnly) continue;
+
+          const localName = element.name.getText(sourceFile);
+          // propertyName is the original name in the source module (only present when renamed)
+          const originalName = element.propertyName
+            ? element.propertyName.getText(sourceFile)
+            : localName;
+          reExports.push({ localName, originalName, source });
+        }
+      }
+      // Note: export * from "./bar" has no exportClause — we skip star re-exports for now
+    });
+
+    return reExports;
   }
 
   /**
