@@ -79,8 +79,16 @@ export function DocPanel({ node, onClose }: DocPanelProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {node && (
-                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">
-                  {node.kind}
+                <span
+                  className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+                    node.kind === 'component'
+                      ? 'bg-violet-100 text-violet-700'
+                      : node.kind === 'function' && /^use[A-Z]/.test(node.name)
+                        ? 'bg-teal-100 text-teal-700'
+                        : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {node.kind === 'function' && /^use[A-Z]/.test(node.name) ? 'hook' : node.kind}
                 </span>
               )}
               <SheetOrDrawerTitle>{node?.name ?? ''}</SheetOrDrawerTitle>

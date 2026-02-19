@@ -120,6 +120,110 @@ function EntryPointNode({ data }: NodeProps) {
   );
 }
 
+function ComponentNode({ data }: NodeProps) {
+  const d = data as unknown as NodeData;
+
+  return (
+    <div
+      style={{
+        background: d.highlighted ? '#f5f3ff' : '#ffffff',
+        border: `1.5px solid ${d.highlighted ? '#7c3aed' : '#8b5cf6'}`,
+        borderRadius: 10,
+        padding: '8px 12px',
+        minWidth: 140,
+        boxShadow: d.highlighted
+          ? '0 0 0 2px #8b5cf640, 0 2px 8px rgba(0,0,0,0.08)'
+          : '0 1px 4px rgba(0,0,0,0.06)',
+        transition: 'all 0.2s ease',
+      }}
+    >
+      <Handle type="target" position={Position.Top} style={{ background: '#8b5cf6' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+        <span
+          style={{
+            background: '#ede9fe',
+            color: '#7c3aed',
+            fontSize: 10,
+            fontWeight: 600,
+            padding: '1px 5px',
+            borderRadius: 3,
+          }}
+        >
+          Component
+        </span>
+        {d.isAsync && (
+          <span
+            style={{
+              background: '#f3f4f6',
+              color: '#6b7280',
+              fontSize: 10,
+              padding: '1px 4px',
+              borderRadius: 3,
+            }}
+          >
+            async
+          </span>
+        )}
+      </div>
+      <div style={{ fontWeight: 500, fontSize: 13, color: '#374151' }}>{d.label}</div>
+      <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{d.filePath}</div>
+      <Handle type="source" position={Position.Bottom} style={{ background: '#8b5cf6' }} />
+    </div>
+  );
+}
+
+function HookNode({ data }: NodeProps) {
+  const d = data as unknown as NodeData;
+
+  return (
+    <div
+      style={{
+        background: d.highlighted ? '#f0fdfa' : '#ffffff',
+        border: `1.5px solid ${d.highlighted ? '#0f766e' : '#0d9488'}`,
+        borderRadius: 10,
+        padding: '8px 12px',
+        minWidth: 140,
+        boxShadow: d.highlighted
+          ? '0 0 0 2px #0d948840, 0 2px 8px rgba(0,0,0,0.08)'
+          : '0 1px 4px rgba(0,0,0,0.06)',
+        transition: 'all 0.2s ease',
+      }}
+    >
+      <Handle type="target" position={Position.Top} style={{ background: '#0d9488' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+        <span
+          style={{
+            background: '#ccfbf1',
+            color: '#0f766e',
+            fontSize: 10,
+            fontWeight: 600,
+            padding: '1px 5px',
+            borderRadius: 3,
+          }}
+        >
+          Hook
+        </span>
+        {d.isAsync && (
+          <span
+            style={{
+              background: '#f3f4f6',
+              color: '#6b7280',
+              fontSize: 10,
+              padding: '1px 4px',
+              borderRadius: 3,
+            }}
+          >
+            async
+          </span>
+        )}
+      </div>
+      <div style={{ fontWeight: 500, fontSize: 13, color: '#374151' }}>{d.label}</div>
+      <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{d.filePath}</div>
+      <Handle type="source" position={Position.Bottom} style={{ background: '#0d9488' }} />
+    </div>
+  );
+}
+
 function FunctionNode({ data }: NodeProps) {
   const d = data as unknown as NodeData;
 
@@ -163,5 +267,7 @@ function FunctionNode({ data }: NodeProps) {
 
 export const nodeTypes = {
   entryPoint: EntryPointNode,
+  componentNode: ComponentNode,
+  hookNode: HookNode,
   functionNode: FunctionNode,
 };
