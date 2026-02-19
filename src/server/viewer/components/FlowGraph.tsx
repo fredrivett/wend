@@ -21,7 +21,7 @@ const elk = new ELK();
 
 const edgeStyleByType: Record<string, React.CSSProperties> = {
   'direct-call': { stroke: '#6b7280' },
-  'async-dispatch': { stroke: '#3b82f6', strokeDasharray: '6 3' },
+  'async-dispatch': { stroke: '#ec4899', strokeDasharray: '3 6' },
   'event-emit': { stroke: '#ec4899', strokeDasharray: '4 4' },
   'http-request': { stroke: '#f97316', strokeDasharray: '8 4' },
   'conditional-call': { stroke: '#f59e0b' },
