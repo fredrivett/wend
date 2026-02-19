@@ -14,6 +14,11 @@ interface NodeData {
     taskId?: string;
   };
   highlighted?: boolean;
+  dimmed?: boolean;
+}
+
+function dimClass(d: NodeData) {
+  return d.dimmed ? 'opacity-50' : '';
 }
 
 const entryTypeConfig: Record<
@@ -103,7 +108,7 @@ function EntryPointNode({ data }: NodeProps) {
     <div
       className={`border-2 ${config.border} rounded-xl px-3.5 py-2.5 min-w-[160px] transition-all duration-200 ${
         d.highlighted ? `${config.bg} ring-2 ${config.ring} shadow-md` : 'bg-white shadow'
-      }`}
+      } ${dimClass(d)}`}
     >
       <Handle type="target" position={Position.Top} style={{ background: config.handle }} />
       <div className="flex items-center gap-1.5 mb-1">
@@ -135,7 +140,7 @@ function ComponentNode({ data }: NodeProps) {
         d.highlighted
           ? 'border-orange-600 bg-orange-50 ring-2 ring-orange-500/25 shadow'
           : 'border-orange-200 bg-white shadow-sm'
-      }`}
+      } ${dimClass(d)}`}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#f97316' }} />
       <div className="flex items-center gap-1 mb-0.5">
@@ -158,7 +163,7 @@ function HookNode({ data }: NodeProps) {
         d.highlighted
           ? 'border-lime-600 bg-lime-50 ring-2 ring-lime-500/25 shadow'
           : 'border-lime-200 bg-white shadow-sm'
-      }`}
+      } ${dimClass(d)}`}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#84cc16' }} />
       <div className="flex items-center gap-1 mb-0.5">
@@ -181,7 +186,7 @@ function FunctionNode({ data }: NodeProps) {
         d.highlighted
           ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/25 shadow'
           : 'border-gray-200 bg-white shadow-sm'
-      }`}
+      } ${dimClass(d)}`}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#9ca3af' }} />
       <div className="flex items-center gap-1 mb-0.5">

@@ -305,7 +305,13 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
   // When visibleGraph changes: use cached sizes for instant layout, or fall back to two-pass measurement
   useEffect(() => {
     visibleGraphRef.current = visibleGraph;
-    const rfNodes = visibleGraph.nodes.map(toReactFlowNode);
+    const rfNodes = visibleGraph.nodes.map((n) => {
+      const rfNode = toReactFlowNode(n);
+      if (selectedEntry) {
+        rfNode.data = { ...rfNode.data, dimmed: n.id !== selectedEntry };
+      }
+      return rfNode;
+    });
     setEdges(toReactFlowEdges(visibleGraph.edges));
 
     const allCached = visibleGraph.nodes.every((n) => sizeCache.current.has(n.id));
