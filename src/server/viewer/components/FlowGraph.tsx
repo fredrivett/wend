@@ -93,7 +93,10 @@ function toReactFlowEdges(graphEdges: FlowGraphData['edges']): Edge[] {
       source: edge.source,
       target: edge.target,
       animated: edge.isAsync,
-      label: edge.label || (edge.type !== 'direct-call' ? edge.type : undefined),
+      label:
+        edge.type === 'direct-call' || edge.type === 'async-dispatch'
+          ? undefined
+          : edge.label || edge.type,
       style,
       labelStyle: { fontSize: 10, fill: '#6b7280' },
     };
