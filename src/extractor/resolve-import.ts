@@ -2,8 +2,47 @@
  * Import path resolution with tsconfig path alias support
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+
+/**
+ * Strip // and /* comments from JSON text without corrupting string literals.
+ * Walks character-by-character, skipping over quoted strings so that
+ * sequences like "@/*" inside paths are preserved.
+ */
+function stripJsonComments(text: string): string {
+  let result = '';
+  let i = 0;
+  while (i < text.length) {
+    // String literal — copy verbatim until closing quote
+    if (text[i] === '"') {
+      const start = i;
+      i++; // opening quote
+      while (i < text.length && text[i] !== '"') {
+        if (text[i] === '\\') i++; // skip escaped char
+        i++;
+      }
+      i++; // closing quote
+      result += text.slice(start, i);
+      continue;
+    }
+    // Line comment
+    if (text[i] === '/' && text[i + 1] === '/') {
+      while (i < text.length && text[i] !== '\n') i++;
+      continue;
+    }
+    // Block comment
+    if (text[i] === '/' && text[i + 1] === '*') {
+      i += 2;
+      while (i < text.length && !(text[i] === '*' && text[i + 1] === '/')) i++;
+      i += 2; // skip closing */
+      continue;
+    }
+    result += text[i];
+    i++;
+  }
+  return result;
+}
 
 interface TsconfigPaths {
   baseDir: string;
@@ -31,8 +70,8 @@ export function loadTsconfigPaths(fromFile: string): TsconfigPaths | null {
     if (existsSync(tsconfigPath)) {
       try {
         const content = readFileSync(tsconfigPath, 'utf-8');
-        // Strip comments (// and /* */) before parsing — tsconfig allows them
-        const stripped = content.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+        // Strip comments while preserving string literals (which may contain /* */ sequences)
+        const stripped = stripJsonComments(content);
         const config = JSON.parse(stripped);
         const paths = config?.compilerOptions?.paths;
 
@@ -87,8 +126,8 @@ const EXT_SWAPS: Array<[string, string[]]> = [
  * Handles .js → .ts extension swapping for TypeScript ESM projects.
  */
 function tryResolveFile(basePath: string): string | null {
-  // If the path already exists as-is, use it
-  if (existsSync(basePath)) {
+  // If the path already exists as a file, use it
+  if (existsSync(basePath) && statSync(basePath).isFile()) {
     return basePath;
   }
 

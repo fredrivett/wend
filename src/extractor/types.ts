@@ -4,7 +4,7 @@
 
 export interface SymbolInfo {
   name: string;
-  kind: 'function' | 'class' | 'const' | 'method';
+  kind: 'function' | 'class' | 'const' | 'method' | 'component';
   filePath: string;
   params: string;
   body: string;
@@ -23,6 +23,12 @@ export interface ImportInfo {
   originalName: string; // original export name (differs from name when renamed: import { foo as bar })
   source: string;
   isDefault: boolean;
+}
+
+export interface ReExportInfo {
+  localName: string; // exported name (e.g. "useSearch")
+  originalName: string; // original name in source file (differs when renamed: export { foo as bar })
+  source: string; // module specifier (e.g. "./use-search")
 }
 
 export interface ExtractionResult {

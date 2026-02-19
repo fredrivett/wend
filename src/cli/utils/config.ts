@@ -16,7 +16,7 @@ export function loadConfig(cwd = process.cwd()): SyncdocsConfig | null {
   const content = readFileSync(configPath, 'utf-8');
 
   const dirMatch = content.match(/^\s*dir:\s*(.+)/m);
-  const outputDir = dirMatch ? dirMatch[1].trim() : '_syncdocs';
+  const outputDir = dirMatch ? stripQuotes(dirMatch[1].trim()) : '_syncdocs';
 
   const include = parseYamlList(content, 'include');
   const exclude = parseYamlList(content, 'exclude');
@@ -44,11 +44,21 @@ function parseYamlList(content: string, key: string): string[] {
     if (trimmed === '') continue;
     const listItemMatch = trimmed.match(/^-\s+(.+)/);
     if (listItemMatch) {
-      items.push(listItemMatch[1].trim());
+      items.push(stripQuotes(listItemMatch[1].trim()));
     } else {
       break;
     }
   }
 
   return items;
+}
+
+function stripQuotes(value: string): string {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+  return value;
 }

@@ -9,6 +9,7 @@ import { TypeScriptExtractor } from './typescript-extractor.js';
 
 const TEST_DIR = join(process.cwd(), '.test-tmp');
 const TEST_FILE = join(TEST_DIR, 'test.ts');
+const TEST_TSX_FILE = join(TEST_DIR, 'test.tsx');
 
 describe('TypeScriptExtractor', () => {
   let extractor: TypeScriptExtractor;
@@ -22,9 +23,8 @@ describe('TypeScriptExtractor', () => {
 
   afterEach(() => {
     try {
-      if (existsSync(TEST_FILE)) {
-        unlinkSync(TEST_FILE);
-      }
+      if (existsSync(TEST_FILE)) unlinkSync(TEST_FILE);
+      if (existsSync(TEST_TSX_FILE)) unlinkSync(TEST_TSX_FILE);
     } catch (_e) {
       // Ignore cleanup errors
     }
@@ -662,6 +662,184 @@ function standalone() { return 42 }
       const imports = extractor.extractImports(TEST_FILE);
 
       expect(imports).toHaveLength(0);
+    });
+  });
+
+  describe('extractReExports', () => {
+    it('should extract named re-exports', () => {
+      const code = `
+export { useSearch } from "./use-search"
+export { parseParams, createFilter } from "./types"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(3);
+      expect(reExports[0]).toMatchObject({
+        localName: 'useSearch',
+        originalName: 'useSearch',
+        source: './use-search',
+      });
+      expect(reExports[1]).toMatchObject({
+        localName: 'parseParams',
+        originalName: 'parseParams',
+        source: './types',
+      });
+    });
+
+    it('should handle renamed re-exports', () => {
+      const code = `
+export { internalFn as publicFn } from "./internal"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(1);
+      expect(reExports[0]).toMatchObject({
+        localName: 'publicFn',
+        originalName: 'internalFn',
+        source: './internal',
+      });
+    });
+
+    it('should skip type-only re-exports', () => {
+      const code = `
+export type { SearchState } from "./types"
+export { useSearch } from "./use-search"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(1);
+      expect(reExports[0].localName).toBe('useSearch');
+    });
+
+    it('should skip individual type-only elements in re-exports', () => {
+      const code = `
+export { type SearchState, useSearch } from "./use-search"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(1);
+      expect(reExports[0].localName).toBe('useSearch');
+    });
+
+    it('should return empty for files with no re-exports', () => {
+      const code = `
+export function foo() { return 1 }
+import { bar } from "./bar"
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      expect(reExports).toHaveLength(0);
+    });
+
+    it('should handle mixed exports and re-exports', () => {
+      const code = `
+export * from "./api"
+export { useSearch } from "./use-search"
+export function localHelper() { return 1 }
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const reExports = extractor.extractReExports(TEST_FILE);
+
+      // Only named re-exports, not star or local exports
+      expect(reExports).toHaveLength(1);
+      expect(reExports[0].localName).toBe('useSearch');
+    });
+  });
+
+  describe('React component detection', () => {
+    it('should detect function declaration component in .tsx file', () => {
+      const code = `
+export function UserAvatar({ name }: { name: string }) {
+  return <div className="avatar">{name}</div>
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('component');
+    });
+
+    it('should detect arrow function component in .tsx file', () => {
+      const code = `
+const ProfileCard = ({ user }: Props) => {
+  return <div><span>{user.name}</span></div>
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('component');
+    });
+
+    it('should detect component with JSX fragment', () => {
+      const code = `
+export function Layout({ children }: Props) {
+  return <><header />{children}<footer /></>
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('component');
+    });
+
+    it('should NOT detect lowercase function as component', () => {
+      const code = `
+export function renderItem({ name }: Props) {
+  return <div>{name}</div>
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('function');
+    });
+
+    it('should NOT detect PascalCase function in .ts file as component', () => {
+      const code = `
+export function CreateUser(name: string) {
+  return { id: '1', name }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('function');
+    });
+
+    it('should NOT detect PascalCase function without JSX as component', () => {
+      const code = `
+export function FormatName(first: string, last: string) {
+  return first + ' ' + last
+}
+`;
+      writeFileSync(TEST_TSX_FILE, code);
+
+      const result = extractor.extractSymbols(TEST_TSX_FILE);
+
+      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols[0].kind).toBe('function');
     });
   });
 

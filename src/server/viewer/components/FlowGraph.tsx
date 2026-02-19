@@ -39,11 +39,15 @@ async function layoutGraph(graphData: FlowGraphData, highlightedIds: Set<string>
       'elk.layered.spacing.nodeNodeBetweenLayers': '60',
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
     },
-    children: graphData.nodes.map((node) => ({
-      id: node.id,
-      width: node.entryType ? 200 : 160,
-      height: node.entryType ? 90 : 70,
-    })),
+    children: graphData.nodes.map((node) => {
+      const isComponent = node.kind === 'component';
+      const isHook = node.kind === 'function' && /^use[A-Z]/.test(node.name);
+      return {
+        id: node.id,
+        width: node.entryType ? 200 : isComponent || isHook ? 170 : 160,
+        height: node.entryType ? 90 : isComponent || isHook ? 80 : 70,
+      };
+    }),
     edges: graphData.edges.map((edge) => ({
       id: edge.id,
       sources: [edge.source],
@@ -62,7 +66,13 @@ async function layoutGraph(graphData: FlowGraphData, highlightedIds: Set<string>
 
       return {
         id: graphNode.id,
-        type: graphNode.entryType ? 'entryPoint' : 'functionNode',
+        type: graphNode.entryType
+          ? 'entryPoint'
+          : graphNode.kind === 'component'
+            ? 'componentNode'
+            : graphNode.kind === 'function' && /^use[A-Z]/.test(graphNode.name)
+              ? 'hookNode'
+              : 'functionNode',
         position: { x: elkNode.x || 0, y: elkNode.y || 0 },
         data: {
           label: graphNode.name,

@@ -1,4 +1,5 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
+import { Badge, type BadgeVariant } from './ui/badge';
 
 interface NodeData {
   label: string;
@@ -15,36 +16,84 @@ interface NodeData {
   highlighted?: boolean;
 }
 
-const methodColors: Record<string, string> = {
-  GET: '#22c55e',
-  POST: '#3b82f6',
-  PUT: '#f59e0b',
-  PATCH: '#f59e0b',
-  DELETE: '#ef4444',
+const entryTypeConfig: Record<
+  string,
+  { border: string; bg: string; ring: string; handle: string }
+> = {
+  'api-route': {
+    border: 'border-blue-500',
+    bg: 'bg-blue-50',
+    ring: 'ring-blue-500/25',
+    handle: '#3b82f6',
+  },
+  page: {
+    border: 'border-violet-500',
+    bg: 'bg-violet-50',
+    ring: 'ring-violet-500/25',
+    handle: '#8b5cf6',
+  },
+  'inngest-function': {
+    border: 'border-pink-500',
+    bg: 'bg-pink-50',
+    ring: 'ring-pink-500/25',
+    handle: '#ec4899',
+  },
+  'trigger-task': {
+    border: 'border-pink-500',
+    bg: 'bg-pink-50',
+    ring: 'ring-pink-500/25',
+    handle: '#ec4899',
+  },
+  middleware: {
+    border: 'border-cyan-500',
+    bg: 'bg-cyan-50',
+    ring: 'ring-cyan-500/25',
+    handle: '#06b6d4',
+  },
+  'server-action': {
+    border: 'border-emerald-500',
+    bg: 'bg-emerald-50',
+    ring: 'ring-emerald-500/25',
+    handle: '#10b981',
+  },
+};
+
+const entryTypeBadgeVariant: Record<string, BadgeVariant> = {
+  'api-route': 'api-route',
+  page: 'page',
+  'inngest-function': 'job',
+  'trigger-task': 'job',
+  middleware: 'middleware',
+  'server-action': 'server-action',
 };
 
 const entryTypeLabels: Record<string, string> = {
   'api-route': 'API',
   page: 'Page',
-  'inngest-function': 'Inngest',
-  'trigger-task': 'Trigger',
+  'inngest-function': 'Job',
+  'trigger-task': 'Job',
   middleware: 'Middleware',
   'server-action': 'Action',
 };
 
-const entryTypeColors: Record<string, string> = {
-  'api-route': '#3b82f6',
-  page: '#8b5cf6',
-  'inngest-function': '#ec4899',
-  'trigger-task': '#f97316',
-  middleware: '#06b6d4',
-  'server-action': '#10b981',
+const entryTypeImpl: Record<string, { label: string; variant: BadgeVariant }> = {
+  'inngest-function': { label: 'Inngest', variant: 'inngest' },
+  'trigger-task': { label: 'Trigger', variant: 'trigger' },
+};
+
+const defaultConfig = {
+  border: 'border-gray-400',
+  bg: 'bg-gray-50',
+  ring: 'ring-gray-400/25',
+  handle: '#6b7280',
 };
 
 function EntryPointNode({ data }: NodeProps) {
   const d = data as unknown as NodeData;
-  const color = d.entryType ? entryTypeColors[d.entryType] || '#6b7280' : '#6b7280';
+  const config = d.entryType ? entryTypeConfig[d.entryType] || defaultConfig : defaultConfig;
+  const badgeVariant = d.entryType ? entryTypeBadgeVariant[d.entryType] || 'default' : 'default';
   const typeLabel = d.entryType ? entryTypeLabels[d.entryType] || d.entryType : '';
+  const impl = d.entryType ? entryTypeImpl[d.entryType] : undefined;
   const httpMethod = d.metadata?.httpMethod;
   const route = d.metadata?.route;
   const eventTrigger = d.metadata?.eventTrigger;
@@ -52,70 +101,73 @@ function EntryPointNode({ data }: NodeProps) {
 
   return (
     <div
-      style={{
-        background: d.highlighted ? '#fefce8' : '#ffffff',
-        border: `2px solid ${color}`,
-        borderRadius: 12,
-        padding: '10px 14px',
-        minWidth: 160,
-        boxShadow: d.highlighted
-          ? `0 0 0 3px ${color}40, 0 4px 12px rgba(0,0,0,0.1)`
-          : '0 2px 8px rgba(0,0,0,0.08)',
-        transition: 'all 0.2s ease',
-      }}
+      className={`border-2 ${config.border} rounded-xl px-3.5 py-2.5 min-w-[160px] transition-all duration-200 ${
+        d.highlighted ? `${config.bg} ring-2 ${config.ring} shadow-md` : 'bg-white shadow'
+      }`}
     >
-      <Handle type="target" position={Position.Top} style={{ background: color }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-        <span
-          style={{
-            background: color,
-            color: '#fff',
-            fontSize: 10,
-            fontWeight: 700,
-            padding: '2px 6px',
-            borderRadius: 4,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-          }}
-        >
-          {typeLabel}
-        </span>
+      <Handle type="target" position={Position.Top} style={{ background: config.handle }} />
+      <div className="flex items-center gap-1.5 mb-1">
+        <Badge variant={badgeVariant}>{typeLabel}</Badge>
+        {impl && <Badge variant={impl.variant}>{impl.label}</Badge>}
         {httpMethod && (
-          <span
-            style={{
-              background: methodColors[httpMethod] || '#6b7280',
-              color: '#fff',
-              fontSize: 10,
-              fontWeight: 700,
-              padding: '2px 6px',
-              borderRadius: 4,
-            }}
-          >
+          <Badge variant={(httpMethod.toLowerCase() as BadgeVariant) || 'default'}>
             {httpMethod}
-          </span>
+          </Badge>
         )}
-        {d.isAsync && (
-          <span
-            style={{
-              background: '#f3f4f6',
-              color: '#6b7280',
-              fontSize: 10,
-              padding: '2px 5px',
-              borderRadius: 4,
-            }}
-          >
-            async
-          </span>
-        )}
+        {d.isAsync && <Badge variant="async">async</Badge>}
       </div>
-      <div style={{ fontWeight: 600, fontSize: 13, color: '#1f2937' }}>{d.label}</div>
+      <div className="font-semibold text-[13px] text-gray-800">{d.label}</div>
       {(route || eventTrigger || taskId) && (
-        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
-          {route || eventTrigger || taskId}
-        </div>
+        <div className="text-[11px] text-gray-500 mt-0.5">{route || eventTrigger || taskId}</div>
       )}
-      <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{d.filePath}</div>
-      <Handle type="source" position={Position.Bottom} style={{ background: color }} />
+      <div className="text-[10px] text-gray-400 mt-0.5">{d.filePath}</div>
+      <Handle type="source" position={Position.Bottom} style={{ background: config.handle }} />
+    </div>
+  );
+}
+
+function ComponentNode({ data }: NodeProps) {
+  const d = data as unknown as NodeData;
+
+  return (
+    <div
+      className={`border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px] transition-all duration-200 ${
+        d.highlighted
+          ? 'border-orange-600 bg-orange-50 ring-2 ring-orange-500/25 shadow'
+          : 'border-orange-200 bg-white shadow-sm'
+      }`}
+    >
+      <Handle type="target" position={Position.Top} style={{ background: '#f97316' }} />
+      <div className="flex items-center gap-1 mb-0.5">
+        <Badge variant="component">Component</Badge>
+        {d.isAsync && <Badge variant="async">async</Badge>}
+      </div>
+      <div className="font-medium text-[13px] text-gray-700">{d.label}</div>
+      <div className="text-[10px] text-gray-400 mt-0.5">{d.filePath}</div>
+      <Handle type="source" position={Position.Bottom} style={{ background: '#f97316' }} />
+    </div>
+  );
+}
+
+function HookNode({ data }: NodeProps) {
+  const d = data as unknown as NodeData;
+
+  return (
+    <div
+      className={`border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px] transition-all duration-200 ${
+        d.highlighted
+          ? 'border-lime-600 bg-lime-50 ring-2 ring-lime-500/25 shadow'
+          : 'border-lime-200 bg-white shadow-sm'
+      }`}
+    >
+      <Handle type="target" position={Position.Top} style={{ background: '#84cc16' }} />
+      <div className="flex items-center gap-1 mb-0.5">
+        <Badge variant="hook">Hook</Badge>
+        {d.isAsync && <Badge variant="async">async</Badge>}
+      </div>
+      <div className="font-medium text-[13px] text-gray-700">{d.label}</div>
+      <div className="text-[10px] text-gray-400 mt-0.5">{d.filePath}</div>
+      <Handle type="source" position={Position.Bottom} style={{ background: '#84cc16' }} />
     </div>
   );
 }
@@ -125,37 +177,19 @@ function FunctionNode({ data }: NodeProps) {
 
   return (
     <div
-      style={{
-        background: d.highlighted ? '#f0f9ff' : '#ffffff',
-        border: `1px solid ${d.highlighted ? '#3b82f6' : '#e5e7eb'}`,
-        borderRadius: 8,
-        padding: '8px 12px',
-        minWidth: 120,
-        boxShadow: d.highlighted
-          ? '0 0 0 2px #3b82f640, 0 2px 8px rgba(0,0,0,0.08)'
-          : '0 1px 4px rgba(0,0,0,0.06)',
-        transition: 'all 0.2s ease',
-      }}
+      className={`border rounded-lg px-3 py-2 min-w-[120px] transition-all duration-200 ${
+        d.highlighted
+          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/25 shadow'
+          : 'border-gray-200 bg-white shadow-sm'
+      }`}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#9ca3af' }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-        <span style={{ fontSize: 10, color: '#9ca3af' }}>{d.kind}</span>
-        {d.isAsync && (
-          <span
-            style={{
-              background: '#f3f4f6',
-              color: '#6b7280',
-              fontSize: 10,
-              padding: '1px 4px',
-              borderRadius: 3,
-            }}
-          >
-            async
-          </span>
-        )}
+      <div className="flex items-center gap-1 mb-0.5">
+        <span className="text-[10px] text-gray-400">{d.kind}</span>
+        {d.isAsync && <Badge variant="async">async</Badge>}
       </div>
-      <div style={{ fontWeight: 500, fontSize: 13, color: '#374151' }}>{d.label}</div>
-      <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{d.filePath}</div>
+      <div className="font-medium text-[13px] text-gray-700">{d.label}</div>
+      <div className="text-[10px] text-gray-400 mt-0.5">{d.filePath}</div>
       <Handle type="source" position={Position.Bottom} style={{ background: '#9ca3af' }} />
     </div>
   );
@@ -163,5 +197,7 @@ function FunctionNode({ data }: NodeProps) {
 
 export const nodeTypes = {
   entryPoint: EntryPointNode,
+  componentNode: ComponentNode,
+  hookNode: HookNode,
   functionNode: FunctionNode,
 };

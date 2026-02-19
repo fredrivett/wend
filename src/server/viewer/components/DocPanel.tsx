@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { GraphNode } from '../types';
 import { DocContent } from './DocContent';
+import { Badge, type BadgeVariant } from './ui/badge';
 import {
   SheetOrDrawer,
   SheetOrDrawerBody,
@@ -79,9 +80,17 @@ export function DocPanel({ node, onClose }: DocPanelProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {node && (
-                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">
-                  {node.kind}
-                </span>
+                <Badge
+                  variant={
+                    node.kind === 'component'
+                      ? 'component'
+                      : node.kind === 'function' && /^use[A-Z]/.test(node.name)
+                        ? ('hook' as BadgeVariant)
+                        : 'default'
+                  }
+                >
+                  {node.kind === 'function' && /^use[A-Z]/.test(node.name) ? 'hook' : node.kind}
+                </Badge>
               )}
               <SheetOrDrawerTitle>{node?.name ?? ''}</SheetOrDrawerTitle>
             </div>

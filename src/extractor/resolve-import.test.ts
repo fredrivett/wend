@@ -46,10 +46,7 @@ describe('resolveImportPath', () => {
       expect(result).toBe(targetFile);
     });
 
-    it('should resolve index.ts imports via /index.ts extension', () => {
-      // When importing './models', the directory exists so existsSync returns the dir.
-      // But with an explicit extensionless path that doesn't exist as a file,
-      // it should try appending /index.ts
+    it('should resolve directory imports to index.ts, not the directory itself', () => {
       const fromFile = join(SRC_DIR, 'main.ts');
       const indexDir = join(SRC_DIR, 'components');
       mkdirSync(indexDir, { recursive: true });
@@ -57,12 +54,10 @@ describe('resolveImportPath', () => {
       writeFileSync(fromFile, '');
       writeFileSync(indexFile, 'export class Button {}');
 
-      // Use a specifier that resolves via /index.ts
-      // The directory itself passes existsSync, so this tests that path
       const result = resolveImportPath(fromFile, './components');
 
-      // Either the directory itself or the index.ts — both are valid resolutions
-      expect(result).toBeTruthy();
+      // Must resolve to index.ts file, not the directory path
+      expect(result).toBe(indexFile);
     });
 
     it('should resolve ../ parent directory imports', () => {
@@ -152,6 +147,29 @@ describe('resolveImportPath', () => {
       const result = resolveImportPath(fromFile, '@app/trigger/task');
 
       expect(result).toBe(triggerFile);
+    });
+
+    it('should resolve @/ alias to index.ts when path is a directory', () => {
+      const tsconfig = {
+        compilerOptions: {
+          paths: { '@/*': ['./src/*'] },
+        },
+      };
+      writeFileSync(join(TEST_DIR, 'tsconfig.json'), JSON.stringify(tsconfig));
+
+      const fromFile = join(SRC_DIR, 'main.ts');
+      writeFileSync(fromFile, '');
+
+      // Create a directory with an index.ts barrel file
+      const searchDir = join(SRC_DIR, 'lib', 'search');
+      mkdirSync(searchDir, { recursive: true });
+      const indexFile = join(searchDir, 'index.ts');
+      writeFileSync(indexFile, 'export { useSearch } from "./use-search"');
+
+      const result = resolveImportPath(fromFile, '@/lib/search');
+
+      // Must resolve to index.ts, not the directory
+      expect(result).toBe(indexFile);
     });
 
     it('should handle tsconfig with comments', () => {
