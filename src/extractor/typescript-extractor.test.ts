@@ -525,6 +525,29 @@ class Processor {
       expect(names).toContain('validate');
       expect(names).toContain('cleanup');
     });
+
+    it('should find calls inside call expression initializers (e.g. task())', () => {
+      const code = `
+function analyzeImage() { return 'result' }
+function getConfig() { return {} }
+const analyzeImageTask = task({
+  id: "analyze-image",
+  run: async () => {
+    const config = getConfig()
+    const result = analyzeImage()
+    return result
+  }
+})
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'analyzeImageTask');
+      const names = calls.map((c) => c.name);
+
+      expect(names).toContain('task');
+      expect(names).toContain('getConfig');
+      expect(names).toContain('analyzeImage');
+    });
   });
 
   describe('extractImports', () => {

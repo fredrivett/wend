@@ -14,6 +14,13 @@ interface NodeData {
     taskId?: string;
   };
   highlighted?: boolean;
+  dimmed?: boolean;
+}
+
+const BASE_NODE_CLASSES = 'h-full flex flex-col justify-center transition-all duration-200';
+
+function nodeClass(d: NodeData, ...classes: string[]) {
+  return `${BASE_NODE_CLASSES} ${d.isAsync ? 'border-dashed' : ''} ${d.dimmed ? 'opacity-50' : ''} ${classes.join(' ')}`;
 }
 
 const entryTypeConfig: Record<
@@ -98,12 +105,13 @@ function EntryPointNode({ data }: NodeProps) {
   const route = d.metadata?.route;
   const eventTrigger = d.metadata?.eventTrigger;
   const taskId = d.metadata?.taskId;
-
   return (
     <div
-      className={`border-2 ${config.border} rounded-xl px-3.5 py-2.5 min-w-[160px] transition-all duration-200 ${
-        d.highlighted ? `${config.bg} ring-2 ${config.ring} shadow-md` : 'bg-white shadow'
-      }`}
+      className={nodeClass(
+        d,
+        `border-2 ${config.border} rounded-xl px-3.5 py-2.5 min-w-[160px]`,
+        d.highlighted ? `${config.bg} ring-2 ${config.ring} shadow-md` : 'bg-white shadow',
+      )}
     >
       <Handle type="target" position={Position.Top} style={{ background: config.handle }} />
       <div className="flex items-center gap-1.5 mb-1">
@@ -131,11 +139,13 @@ function ComponentNode({ data }: NodeProps) {
 
   return (
     <div
-      className={`border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px] transition-all duration-200 ${
+      className={nodeClass(
+        d,
+        'border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px]',
         d.highlighted
           ? 'border-orange-600 bg-orange-50 ring-2 ring-orange-500/25 shadow'
-          : 'border-orange-200 bg-white shadow-sm'
-      }`}
+          : 'border-orange-200 bg-white shadow-sm',
+      )}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#f97316' }} />
       <div className="flex items-center gap-1 mb-0.5">
@@ -154,11 +164,13 @@ function HookNode({ data }: NodeProps) {
 
   return (
     <div
-      className={`border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px] transition-all duration-200 ${
+      className={nodeClass(
+        d,
+        'border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px]',
         d.highlighted
           ? 'border-lime-600 bg-lime-50 ring-2 ring-lime-500/25 shadow'
-          : 'border-lime-200 bg-white shadow-sm'
-      }`}
+          : 'border-lime-200 bg-white shadow-sm',
+      )}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#84cc16' }} />
       <div className="flex items-center gap-1 mb-0.5">
@@ -177,11 +189,13 @@ function FunctionNode({ data }: NodeProps) {
 
   return (
     <div
-      className={`border rounded-lg px-3 py-2 min-w-[120px] transition-all duration-200 ${
+      className={nodeClass(
+        d,
+        'border rounded-lg px-3 py-2 min-w-[120px]',
         d.highlighted
           ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/25 shadow'
-          : 'border-gray-200 bg-white shadow-sm'
-      }`}
+          : 'border-gray-200 bg-white shadow-sm',
+      )}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#9ca3af' }} />
       <div className="flex items-center gap-1 mb-0.5">

@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react';
 import type { GraphNode } from '../types';
+import { getCategoryLabel, type NodeCategory } from './FlowGraph';
 
 interface FlowControlsProps {
   entryPoints: GraphNode[];
@@ -9,6 +10,11 @@ interface FlowControlsProps {
   onSearch: (query: string) => void;
   nodeCount: number;
   edgeCount: number;
+  availableTypes: Map<NodeCategory, number>;
+  enabledTypes: Set<NodeCategory> | null;
+  onToggleType: (category: NodeCategory) => void;
+  onSoloType: (category: NodeCategory) => void;
+  onResetTypes: () => void;
 }
 
 export function FlowControls({
@@ -19,6 +25,11 @@ export function FlowControls({
   onSearch,
   nodeCount,
   edgeCount,
+  availableTypes,
+  enabledTypes,
+  onToggleType,
+  onSoloType,
+  onResetTypes,
 }: FlowControlsProps) {
   const entryTypeLabels: Record<string, string> = {
     'api-route': 'API',
@@ -30,66 +41,76 @@ export function FlowControls({
   };
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 12,
-        left: 12,
-        zIndex: 10,
-        background: '#ffffff',
-        borderRadius: 12,
-        padding: 16,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: '1px solid #e5e7eb',
-        width: 280,
-        maxHeight: 'calc(100vh - 24px)',
-        overflow: 'auto',
-      }}
-    >
-      <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, color: '#111827' }}>
-        Syncdocs Flow Graph
-      </div>
+    <div className="bg-white border-r border-gray-200 p-4 w-[280px] min-w-[280px] h-full overflow-auto">
+      <div className="font-bold text-sm mb-3 text-gray-900">Syncdocs Flow Graph</div>
 
       <input
         type="text"
         placeholder="Search nodes..."
         value={searchQuery}
         onChange={(e: ChangeEvent<HTMLInputElement>) => onSearch(e.target.value)}
-        style={{
-          width: '100%',
-          padding: '8px 10px',
-          border: '1px solid #e5e7eb',
-          borderRadius: 6,
-          fontSize: 13,
-          outline: 'none',
-          marginBottom: 12,
-        }}
+        className="w-full px-2.5 py-2 border border-gray-200 rounded-md text-[13px] outline-none mb-3"
       />
 
-      <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 12 }}>
+      <div className="text-[11px] text-gray-500 mb-3">
         {nodeCount} nodes, {edgeCount} edges
       </div>
 
+      {availableTypes.size > 0 && (
+        <div className="mb-3">
+          <div className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+            <span>Node Types</span>
+            {enabledTypes && (
+              <button
+                type="button"
+                onClick={onResetTypes}
+                className="bg-transparent border-none p-0 text-[11px] text-gray-400 cursor-pointer font-normal"
+              >
+                reset
+              </button>
+            )}
+          </div>
+          <div className="flex flex-col gap-1">
+            {Array.from(availableTypes.entries()).map(([category, count]) => {
+              const checked = !enabledTypes || enabledTypes.has(category);
+              return (
+                <div
+                  key={category}
+                  className="group flex items-center gap-1.5 text-xs text-gray-700"
+                >
+                  <label className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => onToggleType(category)}
+                      className="m-0 shrink-0"
+                    />
+                    <span>{getCategoryLabel(category)}</span>
+                    <span className="text-gray-400 text-[11px]">({count})</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => onSoloType(category)}
+                    className="bg-transparent border-none px-0.5 py-0 text-[11px] text-gray-400 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-100"
+                  >
+                    only
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {entryPoints.length > 0 && (
         <>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
-            Entry Points
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div className="text-xs font-semibold text-gray-700 mb-1.5">Entry Points</div>
+          <div className="flex flex-col gap-1">
             {selectedEntry && (
               <button
                 type="button"
                 onClick={() => onSelectEntry(null)}
-                style={{
-                  padding: '6px 10px',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 6,
-                  background: '#f9fafb',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  textAlign: 'left',
-                  color: '#6b7280',
-                }}
+                className="px-2.5 py-1.5 border border-gray-200 rounded-md bg-gray-50 cursor-pointer text-xs text-left text-gray-500"
               >
                 Show all nodes
               </button>
@@ -106,24 +127,19 @@ export function FlowControls({
                   type="button"
                   key={ep.id}
                   onClick={() => onSelectEntry(isSelected ? null : ep.id)}
-                  style={{
-                    padding: '6px 10px',
-                    border: isSelected ? '1px solid #3b82f6' : '1px solid #e5e7eb',
-                    borderRadius: 6,
-                    background: isSelected ? '#eff6ff' : '#ffffff',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease',
-                  }}
+                  className={`px-2.5 py-1.5 border rounded-md cursor-pointer text-xs text-left transition-all duration-150 overflow-hidden w-full ${
+                    isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white'
+                  }`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {typeLabel && (
-                      <span style={{ fontWeight: 600, color: '#6b7280' }}>{typeLabel}</span>
-                    )}
-                    <span style={{ fontWeight: 500, color: '#1f2937' }}>{ep.name}</span>
+                  <div className="flex items-center gap-1">
+                    {typeLabel && <span className="font-semibold text-gray-500">{typeLabel}</span>}
+                    <span className="font-medium text-gray-800">{ep.name}</span>
                   </div>
-                  {detail && <div style={{ fontSize: 11, color: '#9ca3af' }}>{detail}</div>}
+                  {detail && (
+                    <div className="text-[11px] text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap">
+                      {detail}
+                    </div>
+                  )}
                 </button>
               );
             })}

@@ -215,6 +215,11 @@ export class TypeScriptExtractor {
             body = decl.initializer.body || null;
             return;
           }
+          // Handle call expressions: const foo = task({...}), const bar = inngest.createFunction({...})
+          if (ts.isCallExpression(decl.initializer)) {
+            body = decl.initializer;
+            return;
+          }
         }
       }
 

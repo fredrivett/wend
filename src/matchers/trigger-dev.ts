@@ -48,7 +48,9 @@ export const triggerDevMatcher: FrameworkMatcher = {
     const connections: RuntimeConnection[] = [];
 
     // Detect tasks.trigger("task-id"), tasks.triggerAndWait("task-id"), tasks.batchTrigger("task-id")
-    const triggerPattern = /\.(?:trigger|triggerAndWait|batchTrigger)\s*\(\s*['"`]([^'"`]+)['"`]/g;
+    // Also handles TypeScript generics: tasks.trigger<typeof fooTask>("task-id")
+    const triggerPattern =
+      /\.(?:trigger|triggerAndWait|batchTrigger)\s*(?:<[^>]*>)?\s*\(\s*['"`]([^'"`]+)['"`]/g;
     let match: RegExpExecArray | null;
     match = triggerPattern.exec(symbol.body);
     while (match !== null) {

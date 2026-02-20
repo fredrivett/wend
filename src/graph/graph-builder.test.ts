@@ -121,4 +121,70 @@ export function run() {
       expect(edge).toBeDefined();
     });
   });
+
+  describe('trigger task dispatch edges', () => {
+    it('should create async-dispatch edge from tasks.trigger() to task definition', () => {
+      const taskFile = join(TEST_DIR, 'my-task.ts');
+      writeFileSync(
+        taskFile,
+        `export const myTask = task({
+  id: "my-task",
+  run: async () => { return 1 }
+})`,
+      );
+
+      const callerFile = join(TEST_DIR, 'caller.ts');
+      writeFileSync(
+        callerFile,
+        `export async function handleRequest() {
+  await tasks.trigger("my-task", { data: 1 })
+}`,
+      );
+
+      const graph = builder.build([taskFile, callerFile]);
+
+      const taskNode = graph.nodes.find((n) => n.name === 'myTask');
+      const callerNode = graph.nodes.find((n) => n.name === 'handleRequest');
+      expect(taskNode).toBeDefined();
+      expect(callerNode).toBeDefined();
+
+      const edge = graph.edges.find(
+        (e) => e.source === callerNode?.id && e.target === taskNode?.id,
+      );
+      expect(edge).toBeDefined();
+      expect(edge?.type).toBe('async-dispatch');
+    });
+
+    it('should handle TypeScript generics in tasks.trigger<typeof T>()', () => {
+      const taskFile = join(TEST_DIR, 'analyze.ts');
+      writeFileSync(
+        taskFile,
+        `export const analyzeTask = task({
+  id: "analyze",
+  run: async () => { return 1 }
+})`,
+      );
+
+      const callerFile = join(TEST_DIR, 'route.ts');
+      writeFileSync(
+        callerFile,
+        `export async function POST() {
+  await tasks.trigger<typeof analyzeTask>("analyze", { id: 1 })
+}`,
+      );
+
+      const graph = builder.build([taskFile, callerFile]);
+
+      const taskNode = graph.nodes.find((n) => n.name === 'analyzeTask');
+      const callerNode = graph.nodes.find((n) => n.name === 'POST');
+      expect(taskNode).toBeDefined();
+      expect(callerNode).toBeDefined();
+
+      const edge = graph.edges.find(
+        (e) => e.source === callerNode?.id && e.target === taskNode?.id,
+      );
+      expect(edge).toBeDefined();
+      expect(edge?.type).toBe('async-dispatch');
+    });
+  });
 });

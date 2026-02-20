@@ -56,7 +56,7 @@ export function renderNextSuggestion(candidate: NextCandidate): void {
       ? `imported by ${candidate.importCount} file${candidate.importCount === 1 ? '' : 's'}, `
       : '';
   p.note(
-    `\x1b[0m\x1b[1;36msyncdocs generate ${candidate.file}\x1b[0m\x1b[2;90m\n\n${importNote}${candidate.symbolCount} undocumented symbol${candidate.symbolCount === 1 ? '' : 's'}`,
+    `\x1b[0m\x1b[1;36msyncdocs sync ${candidate.file}\x1b[0m\x1b[2;90m\n\n${importNote}${candidate.symbolCount} undocumented symbol${candidate.symbolCount === 1 ? '' : 's'}`,
     '👉 Next up',
   );
 }
