@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { FlowGraph as FlowGraphData } from '../../graph/types.js';
 import { FlowGraph } from './components/FlowGraph';
 import { LoadingSpinner } from './components/LoadingSpinner';
-import type { FlowGraph as FlowGraphData } from './types';
 
 export default function App() {
   const [graph, setGraph] = useState<FlowGraphData | null>(null);

@@ -1,5 +1,5 @@
 /**
- * Tests for GraphBuilder — specifically barrel file (re-export) edge resolution
+ * Tests for GraphBuilder — edge resolution, barrel files, and conditional edges
  */
 
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { clearTsconfigCache } from '../extractor/resolve-import.js';
 import { GraphBuilder } from './graph-builder.js';
+import { nodeToMermaid } from './graph-to-mermaid.js';
 
 const TEST_DIR = join(process.cwd(), '.test-graph');
 
@@ -122,6 +123,132 @@ export function run() {
     });
   });
 
+  describe('conditional call edges', () => {
+    it('should create conditional-call edges for calls inside if/else', () => {
+      const mainFile = join(TEST_DIR, 'main.ts');
+      writeFileSync(
+        mainFile,
+        `export function processImage() { return 'image' }
+export function processDoc() { return 'doc' }
+export function handle(req: any) {
+  if (req.type === 'image') {
+    processImage()
+  } else {
+    processDoc()
+  }
+}`,
+      );
+
+      const graph = builder.build([mainFile]);
+
+      const handleNode = graph.nodes.find((n) => n.name === 'handle');
+      const imageNode = graph.nodes.find((n) => n.name === 'processImage');
+      const docNode = graph.nodes.find((n) => n.name === 'processDoc');
+
+      const imageEdge = graph.edges.find(
+        (e) => e.source === handleNode?.id && e.target === imageNode?.id,
+      );
+      const docEdge = graph.edges.find(
+        (e) => e.source === handleNode?.id && e.target === docNode?.id,
+      );
+
+      expect(imageEdge?.type).toBe('conditional-call');
+      expect(imageEdge?.conditions).toHaveLength(1);
+      expect(imageEdge?.conditions?.[0].branch).toBe('then');
+
+      expect(docEdge?.type).toBe('conditional-call');
+      expect(docEdge?.conditions?.[0].branch).toBe('else');
+    });
+
+    it('should keep direct-call for unconditional calls', () => {
+      const mainFile = join(TEST_DIR, 'main.ts');
+      writeFileSync(
+        mainFile,
+        `export function validate() { return true }
+export function handle(req: any) {
+  validate()
+}`,
+      );
+
+      const graph = builder.build([mainFile]);
+      const handleNode = graph.nodes.find((n) => n.name === 'handle');
+      const validateNode = graph.nodes.find((n) => n.name === 'validate');
+
+      const edge = graph.edges.find(
+        (e) => e.source === handleNode?.id && e.target === validateNode?.id,
+      );
+
+      expect(edge?.type).toBe('direct-call');
+      expect(edge?.conditions).toBeUndefined();
+    });
+
+    it('should handle mixed conditional and unconditional edges from same source', () => {
+      const mainFile = join(TEST_DIR, 'main.ts');
+      writeFileSync(
+        mainFile,
+        `export function validate() { return true }
+export function processImage() { return 'image' }
+export function save() { return true }
+export function handle(req: any) {
+  validate()
+  if (req.type === 'image') {
+    processImage()
+  }
+  save()
+}`,
+      );
+
+      const graph = builder.build([mainFile]);
+      const handleNode = graph.nodes.find((n) => n.name === 'handle');
+
+      const validateEdge = graph.edges.find(
+        (e) =>
+          e.source === handleNode?.id &&
+          e.target === graph.nodes.find((n) => n.name === 'validate')?.id,
+      );
+      const imageEdge = graph.edges.find(
+        (e) =>
+          e.source === handleNode?.id &&
+          e.target === graph.nodes.find((n) => n.name === 'processImage')?.id,
+      );
+      const saveEdge = graph.edges.find(
+        (e) =>
+          e.source === handleNode?.id &&
+          e.target === graph.nodes.find((n) => n.name === 'save')?.id,
+      );
+
+      expect(validateEdge?.type).toBe('direct-call');
+      expect(imageEdge?.type).toBe('conditional-call');
+      expect(saveEdge?.type).toBe('direct-call');
+    });
+
+    it('should include condition text in edge label', () => {
+      const mainFile = join(TEST_DIR, 'main.ts');
+      writeFileSync(
+        mainFile,
+        `export function compress() { return true }
+export function handle(req: any) {
+  if (req.type === 'image') {
+    if (req.size > 1000) {
+      compress()
+    }
+  }
+}`,
+      );
+
+      const graph = builder.build([mainFile]);
+      const handleNode = graph.nodes.find((n) => n.name === 'handle');
+      const compressNode = graph.nodes.find((n) => n.name === 'compress');
+
+      const edge = graph.edges.find(
+        (e) => e.source === handleNode?.id && e.target === compressNode?.id,
+      );
+
+      expect(edge?.label).toContain('\u2192'); // → character joining nested conditions
+      expect(edge?.conditions).toHaveLength(2);
+    });
+  });
+
   describe('trigger task dispatch edges', () => {
     it('should create async-dispatch edge from tasks.trigger() to task definition', () => {
       const taskFile = join(TEST_DIR, 'my-task.ts');
@@ -186,5 +313,58 @@ export function run() {
       expect(edge).toBeDefined();
       expect(edge?.type).toBe('async-dispatch');
     });
+  });
+});
+
+describe('Mermaid conditional edges', () => {
+  it('should render conditional-call edges with dashed arrows and condition labels', () => {
+    const graph = {
+      version: '1.0',
+      generatedAt: new Date().toISOString(),
+      nodes: [
+        {
+          id: 'main.ts:handle',
+          name: 'handle',
+          kind: 'function' as const,
+          filePath: 'main.ts',
+          isAsync: false,
+          hash: 'abc',
+          lineRange: [1, 10] as [number, number],
+        },
+        {
+          id: 'main.ts:processImage',
+          name: 'processImage',
+          kind: 'function' as const,
+          filePath: 'main.ts',
+          isAsync: false,
+          hash: 'def',
+          lineRange: [11, 15] as [number, number],
+        },
+      ],
+      edges: [
+        {
+          id: 'main.ts:handle->main.ts:processImage',
+          source: 'main.ts:handle',
+          target: 'main.ts:processImage',
+          type: 'conditional-call' as const,
+          conditions: [
+            { condition: 'if (req.size > 1000)', branch: 'then', branchGroup: 'branch:3' },
+          ],
+          label: 'if (req.size > 1000)',
+          isAsync: false,
+        },
+      ],
+    };
+
+    const mermaid = nodeToMermaid(graph, 'main.ts:handle');
+
+    // Dashed arrow for conditional-call
+    expect(mermaid).toContain('.->');
+    // Label is pipe-delimited
+    expect(mermaid).toContain('|"');
+    expect(mermaid).toContain('1000');
+    // > should be escaped as Mermaid HTML entity (#62;)
+    expect(mermaid).not.toContain('> 1000');
+    expect(mermaid).toContain('#62; 1000');
   });
 });

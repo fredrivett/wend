@@ -139,11 +139,16 @@ export class GraphBuilder {
           );
 
           if (targetId && nodeMap.has(targetId)) {
+            const isConditional = callSite.conditions && callSite.conditions.length > 0;
             edges.push({
               id: `${sourceId}->${targetId}`,
               source: sourceId,
               target: targetId,
-              type: 'direct-call',
+              type: isConditional ? 'conditional-call' : 'direct-call',
+              ...(isConditional && {
+                conditions: callSite.conditions,
+                label: callSite.conditions.map((c) => c.condition).join(' \u2192 '),
+              }),
               isAsync: nodeMap.get(targetId)?.isAsync ?? false,
               order: order++,
             });

@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { ExtractionError } from '../cli/utils/errors.js';
+import type { ConditionInfo } from '../graph/types.js';
 import type { CallSite, ExtractionResult, ImportInfo, ReExportInfo, SymbolInfo } from './types.js';
 
 export class TypeScriptExtractor {
@@ -78,8 +79,9 @@ export class TypeScriptExtractor {
   }
 
   /**
-   * Extract call sites from a symbol's body
-   * Returns the names of functions/methods called within the symbol
+   * Extract call sites from a symbol's body.
+   * Detects conditional context (if/else, switch, ternary, &&/||) and
+   * records a chain of ancestor conditions on each call site.
    */
   extractCallSites(filePath: string, symbolName: string): CallSite[] {
     const sourceText = readFileSync(filePath, 'utf-8');
@@ -89,24 +91,202 @@ export class TypeScriptExtractor {
     const bodyNode = this.findSymbolBody(sourceFile, symbolName);
     if (!bodyNode) return [];
 
-    const callSites: CallSite[] = [];
-    const seen = new Set<string>();
+    const allCallSites: CallSite[] = [];
+    // Track total branch count per branchGroup for accurate dedup
+    const branchCounts = new Map<string, number>();
+    const countBranch = (group: string) =>
+      branchCounts.set(group, (branchCounts.get(group) || 0) + 1);
 
-    const walk = (node: ts.Node) => {
-      if (ts.isCallExpression(node)) {
-        const expression = node.expression.getText(sourceFile);
-        // Extract the function name (last identifier in the chain)
-        const name = this.extractCallName(node.expression, sourceFile);
-        if (name && !seen.has(name)) {
-          seen.add(name);
-          callSites.push({ name, expression });
-        }
+    const getLine = (node: ts.Node): number =>
+      sourceFile.getLineAndCharacterOfPosition(node.pos).line;
+
+    const walkIfElseChain = (
+      node: ts.IfStatement,
+      conditions: ConditionInfo[],
+      branchGroup: string,
+      isFirst = true,
+    ) => {
+      const condText = node.expression.getText(sourceFile).slice(0, 60);
+
+      // Walk the "then" branch (first in chain is "if", rest are "else if")
+      const thenCondition: ConditionInfo = isFirst
+        ? { condition: `if (${condText})`, branch: 'then', branchGroup }
+        : { condition: `else if (${condText})`, branch: 'else-if', branchGroup };
+      countBranch(branchGroup);
+      walk(node.thenStatement, [...conditions, thenCondition]);
+
+      if (!node.elseStatement) {
+        // Implicit else path — no code to walk but counts as a branch for dedup
+        countBranch(branchGroup);
+        return;
       }
-      ts.forEachChild(node, walk);
+
+      // Detect "else if" — recurse to keep same branchGroup for flat chain
+      if (ts.isIfStatement(node.elseStatement)) {
+        walkIfElseChain(node.elseStatement, conditions, branchGroup, false);
+      } else {
+        countBranch(branchGroup);
+        walk(node.elseStatement, [
+          ...conditions,
+          { condition: 'else', branch: 'else', branchGroup },
+        ]);
+      }
     };
 
-    walk(bodyNode);
-    return callSites;
+    const walk = (node: ts.Node, conditions: ConditionInfo[]) => {
+      // --- if / else if / else ---
+      if (ts.isIfStatement(node)) {
+        const group = `branch:${getLine(node)}`;
+        walkIfElseChain(node, conditions, group);
+        return;
+      }
+
+      // --- switch/case (with fall-through for empty cases) ---
+      if (ts.isSwitchStatement(node)) {
+        const switchExpr = node.expression.getText(sourceFile).slice(0, 40);
+        const group = `branch:${getLine(node)}`;
+        let pendingLabels: string[] = [];
+
+        for (const clause of node.caseBlock.clauses) {
+          const label = ts.isCaseClause(clause) ? clause.expression.getText(sourceFile) : 'default';
+
+          if (clause.statements.length === 0) {
+            pendingLabels.push(label);
+            continue;
+          }
+
+          const allLabels = [...pendingLabels, label];
+          pendingLabels = [];
+          const caseText =
+            allLabels.length > 1
+              ? `case ${allLabels.join(' | ')}`
+              : label === 'default'
+                ? 'default'
+                : `case ${label}`;
+
+          countBranch(group);
+          walk(clause, [
+            ...conditions,
+            {
+              condition: `switch (${switchExpr}): ${caseText}`,
+              branch: caseText,
+              branchGroup: group,
+            },
+          ]);
+        }
+        return;
+      }
+
+      // --- ternary: cond ? a : b ---
+      if (ts.isConditionalExpression(node)) {
+        const condText = node.condition.getText(sourceFile).slice(0, 60);
+        const group = `branch:${getLine(node)}`;
+        countBranch(group);
+        walk(node.whenTrue, [
+          ...conditions,
+          { condition: `if (${condText})`, branch: 'then', branchGroup: group },
+        ]);
+        countBranch(group);
+        walk(node.whenFalse, [
+          ...conditions,
+          { condition: 'else', branch: 'else', branchGroup: group },
+        ]);
+        return;
+      }
+
+      // --- && / || guards: cond && foo() ---
+      if (
+        ts.isBinaryExpression(node) &&
+        (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ||
+          node.operatorToken.kind === ts.SyntaxKind.BarBarToken)
+      ) {
+        const op = node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ? '&&' : '||';
+        const condText = node.left.getText(sourceFile).slice(0, 60);
+        // Left side is always evaluated
+        walk(node.left, conditions);
+        // Right side is conditional on left
+        walk(node.right, [
+          ...conditions,
+          { condition: `${condText} ${op}`, branch: op, branchGroup: `branch:${getLine(node)}` },
+        ]);
+        return;
+      }
+
+      if (ts.isCallExpression(node)) {
+        const expression = node.expression.getText(sourceFile);
+        const name = this.extractCallName(node.expression, sourceFile);
+        if (name) {
+          allCallSites.push({
+            name,
+            expression,
+            ...(conditions.length > 0 && { conditions: [...conditions] }),
+          });
+        }
+      }
+
+      ts.forEachChild(node, (child) => walk(child, conditions));
+    };
+
+    walk(bodyNode, []);
+    return this.deduplicateCallSites(allCallSites, branchCounts);
+  }
+
+  /**
+   * Deduplicate call sites by target name.
+   * - If any occurrence is unconditional (no conditions), unconditional wins.
+   * - If a target appears in ALL branches of the same branchGroup, it's unconditional.
+   * - Otherwise keep the first conditional occurrence.
+   */
+  private deduplicateCallSites(
+    callSites: CallSite[],
+    branchCounts: Map<string, number>,
+  ): CallSite[] {
+    const grouped = new Map<string, CallSite[]>();
+    for (const site of callSites) {
+      const existing = grouped.get(site.name) || [];
+      existing.push(site);
+      grouped.set(site.name, existing);
+    }
+
+    const result: CallSite[] = [];
+    for (const [, sites] of grouped) {
+      // If any occurrence is unconditional, unconditional wins
+      const unconditional = sites.find((s) => !s.conditions || s.conditions.length === 0);
+      if (unconditional) {
+        result.push({ name: unconditional.name, expression: unconditional.expression });
+        continue;
+      }
+
+      // Check if occurrences cover ALL branches of the same outermost branchGroup
+      // (meaning the function is called regardless of the condition)
+      const byOuterGroup = new Map<string, Set<string>>();
+      for (const site of sites) {
+        if (site.conditions && site.conditions.length > 0) {
+          const outer = site.conditions[0];
+          const branches = byOuterGroup.get(outer.branchGroup) || new Set();
+          branches.add(outer.branch);
+          byOuterGroup.set(outer.branchGroup, branches);
+        }
+      }
+
+      let isEffectivelyUnconditional = false;
+      for (const [group, branches] of byOuterGroup) {
+        const totalBranches = branchCounts.get(group) || 0;
+        if (totalBranches > 0 && branches.size === totalBranches) {
+          isEffectivelyUnconditional = true;
+          break;
+        }
+      }
+
+      if (isEffectivelyUnconditional) {
+        result.push({ name: sites[0].name, expression: sites[0].expression });
+      } else {
+        // Keep first occurrence
+        result.push(sites[0]);
+      }
+    }
+
+    return result;
   }
 
   /**

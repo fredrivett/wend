@@ -101,7 +101,7 @@ function buildMermaid(
     const sourceId = sanitizeId(edge.source);
     const targetId = sanitizeId(edge.target);
     const arrow = edgeArrow(edge);
-    const label = edge.label ? `|"${edge.label}"|` : '';
+    const label = edge.label ? `|"${sanitizeLabel(edge.label)}"|` : '';
     lines.push(`  ${sourceId} ${arrow}${label} ${targetId}`);
   }
 
@@ -142,7 +142,15 @@ function edgeArrow(edge: GraphEdge): string {
   if (edge.type === 'error-handler') return '-. error .->';
   if (edge.type === 'event-emit' || edge.type === 'async-dispatch') return '-.->';
   if (edge.type === 'http-request') return '-- HTTP -->';
+  if (edge.type === 'conditional-call') return '-.->';
   return '-->';
+}
+
+/**
+ * Sanitize a label for mermaid (escape characters that break parsing)
+ */
+function sanitizeLabel(label: string): string {
+  return label.replace(/[>"<|]/g, (ch) => `#${ch.charCodeAt(0)};`);
 }
 
 /**

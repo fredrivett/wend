@@ -17,8 +17,8 @@ import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
 
+import type { FlowGraph as FlowGraphData, GraphNode } from '../../../graph/types.js';
 import { GRID_SIZE, snapCeil } from '../grid';
-import type { FlowGraph as FlowGraphData, GraphNode } from '../types';
 import { DocPanel } from './DocPanel';
 import { FlowControls } from './FlowControls';
 import { defaultLayoutOptions, type LayoutOptions, LayoutSettings } from './LayoutSettings';
@@ -88,18 +88,26 @@ function toReactFlowNode(node: GraphNode): Node {
   };
 }
 
-function toReactFlowEdges(graphEdges: FlowGraphData['edges']): Edge[] {
+function toReactFlowEdges(graphEdges: FlowGraphData['edges'], showConditionals: boolean): Edge[] {
   return graphEdges.map((edge) => {
-    const style = edgeStyleByType[edge.type] || { stroke: '#9ca3af' };
+    // When conditionals are hidden, render conditional-call edges as direct-call style
+    const effectiveType =
+      !showConditionals && edge.type === 'conditional-call' ? 'direct-call' : edge.type;
+    const style = edgeStyleByType[effectiveType] || { stroke: '#9ca3af' };
+
+    let label: string | undefined;
+    if (showConditionals && edge.type === 'conditional-call' && edge.conditions) {
+      label = edge.conditions.map((c) => c.condition).join(' \u2192 ');
+    } else if (effectiveType !== 'direct-call' && effectiveType !== 'async-dispatch') {
+      label = edge.label || edge.type;
+    }
+
     return {
       id: edge.id,
       source: edge.source,
       target: edge.target,
-      animated: edge.type === 'async-dispatch' || edge.type === 'event-emit',
-      label:
-        edge.type === 'direct-call' || edge.type === 'async-dispatch'
-          ? undefined
-          : edge.label || edge.type,
+      animated: effectiveType === 'async-dispatch' || effectiveType === 'event-emit',
+      label,
       style,
       labelStyle: { fontSize: 10, fill: '#6b7280' },
     };
@@ -156,6 +164,7 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(defaultLayoutOptions);
   const [needsLayout, setNeedsLayout] = useState(false);
+  const [showConditionals, setShowConditionals] = useState(false);
   const [enabledTypes, setEnabledTypes] = useState<Set<NodeCategory> | null>(null);
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
@@ -191,6 +200,11 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
   );
 
   const entryPoints = useMemo(() => graph.nodes.filter((n) => n.entryType), [graph.nodes]);
+
+  const hasConditionalEdges = useMemo(
+    () => graph.edges.some((e) => e.type === 'conditional-call'),
+    [graph.edges],
+  );
 
   // Compute available categories and their counts
   const availableTypes = useMemo(() => {
@@ -320,7 +334,7 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
       }
       return rfNode;
     });
-    setEdges(toReactFlowEdges(visibleGraph.edges));
+    setEdges(toReactFlowEdges(visibleGraph.edges, showConditionals));
 
     const allCached = visibleGraph.nodes.every((n) => sizeCache.current.has(n.id));
     if (allCached && visibleGraph.nodes.length > 0) {
@@ -333,7 +347,15 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
       setNodes(rfNodes);
       setNeedsLayout(true);
     }
-  }, [visibleGraph, setNodes, setEdges, layoutOptions, applyPositionsAndFit, selectedEntry]);
+  }, [
+    visibleGraph,
+    setNodes,
+    setEdges,
+    layoutOptions,
+    applyPositionsAndFit,
+    selectedEntry,
+    showConditionals,
+  ]);
 
   // Pass 2: once nodes are measured, cache sizes and run ELK with real dimensions
   useEffect(() => {
@@ -390,6 +412,9 @@ function FlowGraphInner({ graph, onLayoutReady }: FlowGraphProps) {
         onToggleType={onToggleType}
         onSoloType={(category) => setEnabledTypes(new Set([category]))}
         onResetTypes={() => setEnabledTypes(null)}
+        showConditionals={showConditionals}
+        onToggleConditionals={() => setShowConditionals((prev) => !prev)}
+        hasConditionalEdges={hasConditionalEdges}
       />
       <div className="flex-1 relative">
         <LayoutSettings options={layoutOptions} onChange={setLayoutOptions} />

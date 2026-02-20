@@ -866,6 +866,515 @@ export function FormatName(first: string, last: string) {
     });
   });
 
+  describe('Conditional Call Sites', () => {
+    it('should detect calls in if/else branches', () => {
+      const code = `
+function handleRequest(req: any) {
+  if (req.type === 'image') {
+    processImage(req)
+  } else {
+    processDocument(req)
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'handleRequest');
+
+      expect(calls).toHaveLength(2);
+      const imageCall = calls.find((c) => c.name === 'processImage');
+      const docCall = calls.find((c) => c.name === 'processDocument');
+
+      expect(imageCall?.conditions).toHaveLength(1);
+      expect(imageCall?.conditions?.[0].branch).toBe('then');
+      expect(imageCall?.conditions?.[0].condition).toContain('if (');
+
+      expect(docCall?.conditions).toHaveLength(1);
+      expect(docCall?.conditions?.[0].branch).toBe('else');
+
+      // Both should share the same branchGroup
+      expect(imageCall?.conditions?.[0].branchGroup).toBe(docCall?.conditions?.[0].branchGroup);
+    });
+
+    it('should detect calls in if without else', () => {
+      const code = `
+function maybeProcess(req: any) {
+  if (req.urgent) {
+    prioritize(req)
+  }
+  finalize(req)
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'maybeProcess');
+
+      const prioritizeCall = calls.find((c) => c.name === 'prioritize');
+      const finalizeCall = calls.find((c) => c.name === 'finalize');
+
+      expect(prioritizeCall?.conditions).toHaveLength(1);
+      expect(prioritizeCall?.conditions?.[0].branch).toBe('then');
+
+      expect(finalizeCall?.conditions).toBeUndefined();
+    });
+
+    it('should handle else if chains as flat (same branchGroup)', () => {
+      const code = `
+function route(req: any) {
+  if (req.method === 'GET') {
+    handleGet(req)
+  } else if (req.method === 'POST') {
+    handlePost(req)
+  } else {
+    handleOther(req)
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'route');
+
+      expect(calls).toHaveLength(3);
+      const getCall = calls.find((c) => c.name === 'handleGet');
+      const postCall = calls.find((c) => c.name === 'handlePost');
+      const otherCall = calls.find((c) => c.name === 'handleOther');
+
+      // All should have exactly 1 condition (flat, not nested)
+      expect(getCall?.conditions).toHaveLength(1);
+      expect(postCall?.conditions).toHaveLength(1);
+      expect(otherCall?.conditions).toHaveLength(1);
+
+      // All should share the same branchGroup
+      const group = getCall?.conditions?.[0].branchGroup;
+      expect(postCall?.conditions?.[0].branchGroup).toBe(group);
+      expect(otherCall?.conditions?.[0].branchGroup).toBe(group);
+
+      // Check branch types
+      expect(getCall?.conditions?.[0].branch).toBe('then');
+      expect(postCall?.conditions?.[0].branch).toBe('else-if');
+      expect(postCall?.conditions?.[0].condition).toContain('else if (');
+      expect(otherCall?.conditions?.[0].branch).toBe('else');
+    });
+
+    it('should handle else if chains with 3+ branches', () => {
+      const code = `
+function classify(item: any) {
+  if (item.type === 'a') {
+    handleA(item)
+  } else if (item.type === 'b') {
+    handleB(item)
+  } else if (item.type === 'c') {
+    handleC(item)
+  } else {
+    handleDefault(item)
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'classify');
+
+      expect(calls).toHaveLength(4);
+      const handleA = calls.find((c) => c.name === 'handleA');
+      const handleB = calls.find((c) => c.name === 'handleB');
+      const handleC = calls.find((c) => c.name === 'handleC');
+      const handleDefault = calls.find((c) => c.name === 'handleDefault');
+
+      const group = handleA?.conditions?.[0].branchGroup;
+
+      // All should share the same branchGroup and have 1 condition
+      for (const call of calls) {
+        expect(call.conditions).toHaveLength(1);
+        expect(call.conditions?.[0].branchGroup).toBe(group);
+      }
+
+      // Check branch types and condition strings
+      expect(handleA?.conditions?.[0].branch).toBe('then');
+      expect(handleA?.conditions?.[0].condition).toBe("if (item.type === 'a')");
+      expect(handleB?.conditions?.[0].branch).toBe('else-if');
+      expect(handleB?.conditions?.[0].condition).toContain('else if (');
+      expect(handleC?.conditions?.[0].branch).toBe('else-if');
+      expect(handleC?.conditions?.[0].condition).toContain('else if (');
+      expect(handleDefault?.conditions?.[0].branch).toBe('else');
+      expect(handleDefault?.conditions?.[0].condition).toBe('else');
+    });
+
+    it('should handle nested if inside if with condition chain', () => {
+      const code = `
+function process(req: any) {
+  if (req.type === 'image') {
+    if (req.size > 1000) {
+      compress(req)
+    }
+    transform(req)
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'process');
+
+      const compressCall = calls.find((c) => c.name === 'compress');
+      const transformCall = calls.find((c) => c.name === 'transform');
+
+      // compress has 2 conditions (outer if + inner if)
+      expect(compressCall?.conditions).toHaveLength(2);
+      expect(compressCall?.conditions?.[0].condition).toContain('req.type');
+      expect(compressCall?.conditions?.[1].condition).toContain('req.size');
+
+      // Different branchGroups for different if statements
+      expect(compressCall?.conditions?.[0].branchGroup).not.toBe(
+        compressCall?.conditions?.[1].branchGroup,
+      );
+
+      // transform has 1 condition (only outer if)
+      expect(transformCall?.conditions).toHaveLength(1);
+    });
+
+    it('should handle deeply nested conditionals (3+ levels)', () => {
+      const code = `
+function deep(req: any) {
+  if (req.a) {
+    if (req.b) {
+      if (req.c) {
+        handle(req)
+      }
+    }
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'deep');
+      const handleCall = calls.find((c) => c.name === 'handle');
+
+      expect(handleCall?.conditions).toHaveLength(3);
+    });
+
+    it('should detect switch/case with shared branchGroup', () => {
+      const code = `
+function handleAction(action: string) {
+  switch (action) {
+    case 'create':
+      doCreate()
+      break
+    case 'update':
+      doUpdate()
+      break
+    default:
+      doDefault()
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'handleAction');
+
+      expect(calls).toHaveLength(3);
+      const createCall = calls.find((c) => c.name === 'doCreate');
+      const updateCall = calls.find((c) => c.name === 'doUpdate');
+      const defaultCall = calls.find((c) => c.name === 'doDefault');
+
+      // All share same branchGroup
+      const group = createCall?.conditions?.[0].branchGroup;
+      expect(updateCall?.conditions?.[0].branchGroup).toBe(group);
+      expect(defaultCall?.conditions?.[0].branchGroup).toBe(group);
+
+      expect(createCall?.conditions?.[0].branch).toBe("case 'create'");
+      expect(defaultCall?.conditions?.[0].branch).toBe('default');
+    });
+
+    it('should handle switch with default case', () => {
+      const code = `
+function handleStatus(status: string) {
+  switch (status) {
+    case 'ok':
+      logSuccess()
+      break
+    default:
+      logError()
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'handleStatus');
+
+      const defaultCall = calls.find((c) => c.name === 'logError');
+      expect(defaultCall?.conditions?.[0].branch).toBe('default');
+      expect(defaultCall?.conditions?.[0].condition).toContain('default');
+    });
+
+    it('should handle switch fall-through (empty cases)', () => {
+      const code = `
+function handleType(type: string) {
+  switch (type) {
+    case 'jpg':
+    case 'png':
+    case 'gif':
+      processImage()
+      break
+    case 'pdf':
+      processDocument()
+      break
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'handleType');
+
+      const imageCall = calls.find((c) => c.name === 'processImage');
+      expect(imageCall?.conditions?.[0].condition).toContain("'jpg' | 'png' | 'gif'");
+    });
+
+    it('should detect ternary conditionals', () => {
+      const code = `
+function choose(flag: boolean) {
+  const result = flag ? getPositive() : getNegative()
+  return result
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'choose');
+
+      const posCall = calls.find((c) => c.name === 'getPositive');
+      const negCall = calls.find((c) => c.name === 'getNegative');
+
+      expect(posCall?.conditions).toHaveLength(1);
+      expect(posCall?.conditions?.[0].branch).toBe('then');
+
+      expect(negCall?.conditions).toHaveLength(1);
+      expect(negCall?.conditions?.[0].branch).toBe('else');
+
+      // Same branchGroup
+      expect(posCall?.conditions?.[0].branchGroup).toBe(negCall?.conditions?.[0].branchGroup);
+    });
+
+    it('should detect && guard', () => {
+      const code = `
+function maybeLog(verbose: boolean) {
+  verbose && logDetails()
+  finish()
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'maybeLog');
+
+      const logCall = calls.find((c) => c.name === 'logDetails');
+      const finishCall = calls.find((c) => c.name === 'finish');
+
+      expect(logCall?.conditions).toHaveLength(1);
+      expect(logCall?.conditions?.[0].branch).toBe('&&');
+      expect(logCall?.conditions?.[0].condition).toContain('&&');
+
+      expect(finishCall?.conditions).toBeUndefined();
+    });
+
+    it('should detect || guard', () => {
+      const code = `
+function ensureValue(val: any) {
+  val || setDefault()
+  process(val)
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'ensureValue');
+
+      const defaultCall = calls.find((c) => c.name === 'setDefault');
+      expect(defaultCall?.conditions).toHaveLength(1);
+      expect(defaultCall?.conditions?.[0].branch).toBe('||');
+    });
+
+    // Dedup / coexistence tests
+
+    it('should mark as unconditional when called both conditionally and unconditionally', () => {
+      const code = `
+function process(req: any) {
+  if (req.fast) {
+    validate(req)
+  }
+  validate(req)
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'process');
+
+      const validateCall = calls.find((c) => c.name === 'validate');
+      expect(validateCall?.conditions).toBeUndefined();
+    });
+
+    it('should mark as unconditional when called in both if and else', () => {
+      const code = `
+function process(req: any) {
+  if (req.type === 'a') {
+    log(req)
+  } else {
+    log(req)
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'process');
+
+      expect(calls).toHaveLength(1);
+      const logCall = calls.find((c) => c.name === 'log');
+      expect(logCall?.conditions).toBeUndefined();
+    });
+
+    it('should NOT promote to unconditional when only in some branches of 3+ chain', () => {
+      const code = `
+function route(req: any) {
+  if (req.type === 'a') {
+    foo(req)
+  } else if (req.type === 'b') {
+    bar(req)
+  } else {
+    foo(req)
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'route');
+
+      // foo() is in then + else but NOT else-if — it's still conditional
+      const fooCalls = calls.filter((c) => c.name === 'foo');
+      expect(fooCalls).toHaveLength(1);
+      expect(fooCalls[0].conditions).toBeDefined();
+      expect(fooCalls[0].conditions?.length).toBeGreaterThan(0);
+
+      // bar is also conditional
+      const barCall = calls.find((c) => c.name === 'bar');
+      expect(barCall?.conditions).toBeDefined();
+    });
+
+    it('should promote to unconditional when called in ALL branches of 3+ chain', () => {
+      const code = `
+function route(req: any) {
+  if (req.type === 'a') {
+    log(req)
+  } else if (req.type === 'b') {
+    log(req)
+  } else {
+    log(req)
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'route');
+
+      // log() is in ALL 3 branches — should be unconditional
+      const logCall = calls.find((c) => c.name === 'log');
+      expect(logCall?.conditions).toBeUndefined();
+    });
+
+    it('should keep first occurrence when same function in different if blocks', () => {
+      const code = `
+function process(req: any) {
+  if (req.a) {
+    handle(req)
+  }
+  if (req.b) {
+    handle(req)
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'process');
+
+      // Should be deduped to 1 call
+      const handleCalls = calls.filter((c) => c.name === 'handle');
+      expect(handleCalls).toHaveLength(1);
+      // Should keep the first conditional occurrence
+      expect(handleCalls[0].conditions).toHaveLength(1);
+      expect(handleCalls[0].conditions?.[0].condition).toContain('req.a');
+    });
+
+    it('should promote ternary to unconditional when called in both branches', () => {
+      const code = `
+function process(flag: boolean) {
+  const result = flag ? handle('a') : handle('b')
+  return result
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'process');
+
+      const handleCall = calls.find((c) => c.name === 'handle');
+      expect(handleCall?.conditions).toBeUndefined();
+    });
+
+    it('should handle unconditional calls alongside conditional ones', () => {
+      const code = `
+function handleRequest(req: any) {
+  validate(req)
+  if (req.type === 'image') {
+    processImage(req)
+  }
+  save(req)
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'handleRequest');
+
+      const validateCall = calls.find((c) => c.name === 'validate');
+      const imageCall = calls.find((c) => c.name === 'processImage');
+      const saveCall = calls.find((c) => c.name === 'save');
+
+      expect(validateCall?.conditions).toBeUndefined();
+      expect(imageCall?.conditions).toHaveLength(1);
+      expect(saveCall?.conditions).toBeUndefined();
+    });
+
+    // Edge cases
+
+    it('should truncate long condition text', () => {
+      const longCondition = 'a'.repeat(100);
+      const code = `
+function check(req: any) {
+  if (req.${longCondition}) {
+    handle(req)
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'check');
+      const handleCall = calls.find((c) => c.name === 'handle');
+
+      // The condition inside "if (...)" should be truncated to 60 chars
+      // The full condition text is "if (<truncated>)"
+      expect(handleCall?.conditions?.[0].condition.length).toBeLessThanOrEqual(65);
+    });
+
+    it('should detect calls inside callbacks within conditionals', () => {
+      const code = `
+function process(items: any[], flag: boolean) {
+  if (flag) {
+    items.map((item: any) => transform(item))
+  }
+}
+`;
+      writeFileSync(TEST_FILE, code);
+
+      const calls = extractor.extractCallSites(TEST_FILE, 'process');
+      const transformCall = calls.find((c) => c.name === 'transform');
+
+      expect(transformCall?.conditions).toHaveLength(1);
+      expect(transformCall?.conditions?.[0].branch).toBe('then');
+    });
+  });
+
   describe('TypeScript-specific Features', () => {
     it('should handle generic functions', () => {
       const code = `

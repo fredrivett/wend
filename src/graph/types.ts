@@ -38,13 +38,19 @@ export type EdgeType =
   | 'error-handler'
   | 'middleware-chain';
 
+export interface ConditionInfo {
+  condition: string; // "if (req.type === 'image')" or "else if (req.size > 1000)"
+  branch: string; // "then" | "else" | "else-if" | "case image" | "default" | "&&" | "||"
+  branchGroup: string; // "branch:3" — line number of if/switch, links alternatives
+}
+
 export interface GraphEdge {
   id: string;
   source: string; // node id
   target: string; // node id
   type: EdgeType;
   label?: string;
-  condition?: string; // "if user.isAdmin"
+  conditions?: ConditionInfo[]; // chain of ancestor conditions (nested if/else)
   isAsync: boolean;
   order?: number; // call order within source function
 }

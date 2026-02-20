@@ -2,6 +2,8 @@
  * Types for symbol extraction
  */
 
+import type { ConditionInfo } from '../graph/types.js';
+
 export interface SymbolInfo {
   name: string;
   kind: 'function' | 'class' | 'const' | 'method' | 'component';
@@ -16,6 +18,7 @@ export interface SymbolInfo {
 export interface CallSite {
   name: string;
   expression: string;
+  conditions?: ConditionInfo[]; // chain of ancestor conditions (nested if/else)
 }
 
 export interface ImportInfo {

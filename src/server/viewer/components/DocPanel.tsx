@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { GraphNode } from '../types';
+import type { GraphNode } from '../../../graph/types.js';
 import { DocContent } from './DocContent';
 import { Badge, type BadgeVariant } from './ui/badge';
 import {

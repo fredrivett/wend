@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react';
-import type { GraphNode } from '../types';
+import type { GraphNode } from '../../../graph/types.js';
 import { getCategoryLabel, type NodeCategory } from './FlowGraph';
 
 interface FlowControlsProps {
@@ -15,6 +15,9 @@ interface FlowControlsProps {
   onToggleType: (category: NodeCategory) => void;
   onSoloType: (category: NodeCategory) => void;
   onResetTypes: () => void;
+  showConditionals: boolean;
+  onToggleConditionals: () => void;
+  hasConditionalEdges: boolean;
 }
 
 export function FlowControls({
@@ -30,6 +33,9 @@ export function FlowControls({
   onToggleType,
   onSoloType,
   onResetTypes,
+  showConditionals,
+  onToggleConditionals,
+  hasConditionalEdges,
 }: FlowControlsProps) {
   const entryTypeLabels: Record<string, string> = {
     'api-route': 'API',
@@ -99,6 +105,20 @@ export function FlowControls({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {hasConditionalEdges && (
+        <div className="mb-3">
+          <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showConditionals}
+              onChange={onToggleConditionals}
+              className="m-0 shrink-0"
+            />
+            <span>Show conditionals</span>
+          </label>
         </div>
       )}
 
