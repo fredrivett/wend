@@ -38,9 +38,10 @@ export function loadConfig(cwd = process.cwd()): SyncdocsConfig | null {
 /**
  * Parse a YAML list under a given key.
  * Finds `key:` on its own line, then collects subsequent `- value` lines.
+ * Skips blank lines and comment lines within the list.
  */
 function parseYamlList(content: string, key: string): string[] {
-  const keyPattern = new RegExp(`^\\s*${key}:\\s*$`, 'm');
+  const keyPattern = new RegExp(`^\\s*${key}:\\s*(?:#.*)?$`, 'm');
   const keyMatch = keyPattern.exec(content);
   if (!keyMatch) return [];
 
@@ -49,10 +50,11 @@ function parseYamlList(content: string, key: string): string[] {
 
   for (const line of afterKey.split('\n')) {
     const trimmed = line.trim();
-    if (trimmed === '') continue;
+    if (trimmed === '' || trimmed.startsWith('#')) continue;
     const listItemMatch = trimmed.match(/^-\s+(.+)/);
     if (listItemMatch) {
-      items.push(stripQuotes(listItemMatch[1].trim()));
+      const value = listItemMatch[1].replace(/\s+#.*$/, '').trim();
+      items.push(stripQuotes(value));
     } else {
       break;
     }
