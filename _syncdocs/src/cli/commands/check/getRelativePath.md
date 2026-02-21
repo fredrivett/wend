@@ -1,6 +1,6 @@
 ---
 title: getRelativePath
-generated: 2026-02-21T14:29:22.443Z
+generated: 2026-02-21T15:16:37.165Z
 graphNode: src/cli/commands/check.ts:getRelativePath
 dependencies:
   - path: src/cli/commands/check.ts

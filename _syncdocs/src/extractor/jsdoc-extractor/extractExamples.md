@@ -1,6 +1,6 @@
 ---
 title: extractExamples
-generated: 2026-02-21T14:29:22.451Z
+generated: 2026-02-21T15:16:37.169Z
 graphNode: src/extractor/jsdoc-extractor.ts:extractExamples
 dependencies:
   - path: src/extractor/jsdoc-extractor.ts

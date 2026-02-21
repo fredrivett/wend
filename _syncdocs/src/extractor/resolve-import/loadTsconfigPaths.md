@@ -1,6 +1,6 @@
 ---
 title: loadTsconfigPaths
-generated: 2026-02-21T14:29:22.452Z
+generated: 2026-02-21T15:16:37.169Z
 graphNode: src/extractor/resolve-import.ts:loadTsconfigPaths
 dependencies:
   - path: src/extractor/resolve-import.ts

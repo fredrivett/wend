@@ -1,18 +1,18 @@
 ---
 title: registerInitCommand
-generated: 2026-02-21T14:29:22.443Z
+generated: 2026-02-21T15:16:37.165Z
 graphNode: src/cli/commands/init.ts:registerInitCommand
 dependencies:
   - path: src/cli/commands/init.ts
     symbol: registerInitCommand
-    hash: 387d2390ee339b3c4e661c3c2381fbaf2a5d2c82d1e2d963b579665440f6530e
+    hash: 373b67d67725704eb10197c39b6c42110c3e02dbe8a2d8d00b8b2d26737ee9ab
 ---
 
 # registerInitCommand
 
 `exported`
 
-`function` in `src/cli/commands/init.ts:15-118`
+`function` in `src/cli/commands/init.ts:16-122`
 
 Register the `syncdocs init` CLI command.
 
@@ -29,4 +29,6 @@ include/exclude patterns, and writes a `config.yaml` file.
 
 | Symbol | File | Type |
 |---|---|---|
+| `detectIncludePatterns` | `src/cli/utils/detect-sources.ts` | direct-call |
+| `splitGlobPatterns` | `src/cli/commands/init.ts` | direct-call |
 | `generateConfigYAML` | `src/cli/commands/init.ts` | direct-call |

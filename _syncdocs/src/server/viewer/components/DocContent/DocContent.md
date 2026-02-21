@@ -1,6 +1,6 @@
 ---
 title: DocContent
-generated: 2026-02-21T14:29:22.458Z
+generated: 2026-02-21T15:16:37.174Z
 graphNode: src/server/viewer/components/DocContent.tsx:DocContent
 dependencies:
   - path: src/server/viewer/components/DocContent.tsx

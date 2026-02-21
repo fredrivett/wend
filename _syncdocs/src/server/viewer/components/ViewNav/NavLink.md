@@ -1,6 +1,6 @@
 ---
 title: NavLink
-generated: 2026-02-21T14:29:22.464Z
+generated: 2026-02-21T15:16:37.176Z
 graphNode: src/server/viewer/components/ViewNav.tsx:NavLink
 dependencies:
   - path: src/server/viewer/components/ViewNav.tsx

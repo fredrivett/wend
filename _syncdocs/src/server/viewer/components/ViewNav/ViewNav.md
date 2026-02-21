@@ -1,6 +1,6 @@
 ---
 title: ViewNav
-generated: 2026-02-21T14:29:22.465Z
+generated: 2026-02-21T15:16:37.177Z
 graphNode: src/server/viewer/components/ViewNav.tsx:ViewNav
 dependencies:
   - path: src/server/viewer/components/ViewNav.tsx

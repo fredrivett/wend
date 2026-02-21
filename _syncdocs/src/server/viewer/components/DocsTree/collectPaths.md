@@ -1,6 +1,6 @@
 ---
 title: collectPaths
-generated: 2026-02-21T14:29:22.459Z
+generated: 2026-02-21T15:16:37.175Z
 graphNode: src/server/viewer/components/DocsTree.tsx:collectPaths
 dependencies:
   - path: src/server/viewer/components/DocsTree.tsx

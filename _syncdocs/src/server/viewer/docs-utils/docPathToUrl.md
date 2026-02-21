@@ -1,6 +1,6 @@
 ---
 title: docPathToUrl
-generated: 2026-02-21T14:29:22.472Z
+generated: 2026-02-21T15:16:37.179Z
 graphNode: src/server/viewer/docs-utils.ts:docPathToUrl
 dependencies:
   - path: src/server/viewer/docs-utils.ts
