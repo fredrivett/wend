@@ -1,6 +1,6 @@
 ---
 title: ComponentNode
-generated: 2026-02-21T14:29:22.462Z
+generated: 2026-02-21T15:16:37.176Z
 graphNode: src/server/viewer/components/NodeTypes.tsx:ComponentNode
 dependencies:
   - path: src/server/viewer/components/NodeTypes.tsx

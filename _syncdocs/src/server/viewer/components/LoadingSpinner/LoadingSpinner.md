@@ -1,6 +1,6 @@
 ---
 title: LoadingSpinner
-generated: 2026-02-21T14:29:22.461Z
+generated: 2026-02-21T15:16:37.176Z
 graphNode: src/server/viewer/components/LoadingSpinner.tsx:LoadingSpinner
 dependencies:
   - path: src/server/viewer/components/LoadingSpinner.tsx

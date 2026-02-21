@@ -53,6 +53,20 @@ export function registerSyncCommand(cli: CAC) {
           `Found ${sourceFiles.length} source file${sourceFiles.length === 1 ? '' : 's'}`,
         );
 
+        if (sourceFiles.length === 0 && !target) {
+          if (config.scope.include.length === 0) {
+            p.log.warn(
+              'No include patterns configured.\nCheck scope.include in _syncdocs/config.yaml',
+            );
+          } else {
+            p.log.warn(
+              `No files matched include patterns:\n${config.scope.include.map((pat) => `  - ${pat}`).join('\n')}\n\nCheck that your config matches your project structure.`,
+            );
+          }
+          p.outro(`Synced to ${config.outputDir}/`);
+          process.exit(0);
+        }
+
         // Build graph
         spinner.start(`Analyzing ${sourceFiles.length} files`);
 

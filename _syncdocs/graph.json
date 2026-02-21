@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-02-21T14:29:22.436Z",
+  "generatedAt": "2026-02-21T15:16:37.161Z",
   "nodes": [
     {
       "id": "scripts/test-extractor.ts:testFile",
@@ -146,10 +146,10 @@
       "kind": "function",
       "filePath": "src/cli/commands/init.ts",
       "isAsync": false,
-      "hash": "387d2390ee339b3c4e661c3c2381fbaf2a5d2c82d1e2d963b579665440f6530e",
+      "hash": "373b67d67725704eb10197c39b6c42110c3e02dbe8a2d8d00b8b2d26737ee9ab",
       "lineRange": [
-        15,
-        118
+        16,
+        122
       ],
       "description": "Register the `syncdocs init` CLI command.\n\nRuns an interactive setup wizard that prompts for output directory,\ninclude/exclude patterns, and writes a `config.yaml` file.",
       "structuredParams": [
@@ -163,6 +163,29 @@
       "isExported": true
     },
     {
+      "id": "src/cli/commands/init.ts:splitGlobPatterns",
+      "name": "splitGlobPatterns",
+      "kind": "function",
+      "filePath": "src/cli/commands/init.ts",
+      "isAsync": false,
+      "hash": "ecfa4b35bed5ca4d3b1e0ac582db3e909516ab9fc153b3a336158b5b5474d827",
+      "lineRange": [
+        122,
+        158
+      ],
+      "description": "Split a comma-separated glob list while preserving commas inside brace sets.\nExample: `<pattern-1>,<pattern-2>` => two patterns.",
+      "structuredParams": [
+        {
+          "name": "input",
+          "type": "string",
+          "isOptional": false,
+          "isRest": false
+        }
+      ],
+      "returnType": "string[]",
+      "isExported": false
+    },
+    {
       "id": "src/cli/commands/init.ts:generateConfigYAML",
       "name": "generateConfigYAML",
       "kind": "function",
@@ -170,8 +193,8 @@
       "isAsync": false,
       "hash": "f294cb3fefea02587e4010e1cf8f0c2a712bba9223716087c1b40026978be03b",
       "lineRange": [
-        118,
-        138
+        158,
+        178
       ],
       "description": "Serialize an init config object to a YAML config file string.",
       "structuredParams": [
@@ -235,10 +258,10 @@
       "kind": "function",
       "filePath": "src/cli/commands/sync.ts",
       "isAsync": false,
-      "hash": "0b4c6589b32724fb59d642e1339d4761873875b8efb2020bdc9fd9ee99b5a731",
+      "hash": "84646837b7c609306428fc819c8e64578952b34fec901a9645a2e5ee2b13c916",
       "lineRange": [
         9,
-        127
+        141
       ],
       "description": "Register the `syncdocs sync` CLI command.\n\nFinds source files, builds the dependency graph, and generates static\nmarkdown documentation for every node. Optionally filters to a target path.",
       "structuredParams": [
@@ -310,12 +333,12 @@
       "kind": "function",
       "filePath": "src/cli/utils/config.ts",
       "isAsync": false,
-      "hash": "558bb140bcf6fc293e19e91a39024669ef9145def14e4da1808983b54fc57379",
+      "hash": "2cdc4ac180558537f582054103aacd0fd3c67e00528496ba91816bdfe75925a5",
       "lineRange": [
         36,
-        62
+        64
       ],
-      "description": "Parse a YAML list under a given key.\nFinds `key:` on its own line, then collects subsequent `- value` lines.",
+      "description": "Parse a YAML list under a given key.\nFinds `key:` on its own line, then collects subsequent `- value` lines.\nSkips blank lines and comment lines within the list.",
       "structuredParams": [
         {
           "name": "content",
@@ -341,8 +364,8 @@
       "isAsync": false,
       "hash": "f8a587abb15d6654b8ee0c83aafe38cb2fb8ce14f969b8452518b9a9f7a8baf4",
       "lineRange": [
-        62,
-        73
+        64,
+        75
       ],
       "description": "Remove surrounding single or double quotes from a string value.",
       "structuredParams": [
@@ -354,6 +377,129 @@
         }
       ],
       "returnType": "string",
+      "isExported": false
+    },
+    {
+      "id": "src/cli/utils/detect-sources.ts:detectIncludePatterns",
+      "name": "detectIncludePatterns",
+      "kind": "function",
+      "filePath": "src/cli/utils/detect-sources.ts",
+      "isAsync": false,
+      "hash": "6be9d0ccd84e3b3823f1d404ab36306dfe55bb0f15280ce89a6d72df9a81e50f",
+      "lineRange": [
+        18,
+        51
+      ],
+      "description": "Detect likely source-code include patterns from common project layouts.\n\nReturns candidate patterns in priority order. Falls back to the historical\ndefault when no likely source files are found.",
+      "structuredParams": [
+        {
+          "name": "rootDir",
+          "type": "string",
+          "isOptional": false,
+          "isRest": false
+        }
+      ],
+      "returnType": "string[]",
+      "isExported": true
+    },
+    {
+      "id": "src/cli/utils/detect-sources.ts:containsSourceFiles",
+      "name": "containsSourceFiles",
+      "kind": "function",
+      "filePath": "src/cli/utils/detect-sources.ts",
+      "isAsync": false,
+      "hash": "5a4d31e6b5d0f247d0f198a75d3043b230b8e69d0d6271a41096f480348f8095",
+      "lineRange": [
+        51,
+        59
+      ],
+      "structuredParams": [
+        {
+          "name": "directoryPath",
+          "type": "string",
+          "isOptional": false,
+          "isRest": false
+        },
+        {
+          "name": "maxDepth",
+          "type": "number",
+          "isOptional": false,
+          "isRest": false
+        }
+      ],
+      "returnType": "boolean",
+      "isExported": false
+    },
+    {
+      "id": "src/cli/utils/detect-sources.ts:scanDirectory",
+      "name": "scanDirectory",
+      "kind": "function",
+      "filePath": "src/cli/utils/detect-sources.ts",
+      "isAsync": false,
+      "hash": "dbf0091eabd55559bc18e29bca046e580e89b9e3a2a967b4e92bc242a1cadca6",
+      "lineRange": [
+        59,
+        85
+      ],
+      "structuredParams": [
+        {
+          "name": "directoryPath",
+          "type": "string",
+          "isOptional": false,
+          "isRest": false
+        },
+        {
+          "name": "remainingDepth",
+          "type": "number",
+          "isOptional": false,
+          "isRest": false
+        }
+      ],
+      "returnType": "boolean",
+      "isExported": false
+    },
+    {
+      "id": "src/cli/utils/detect-sources.ts:hasRootLevelSourceFiles",
+      "name": "hasRootLevelSourceFiles",
+      "kind": "function",
+      "filePath": "src/cli/utils/detect-sources.ts",
+      "isAsync": false,
+      "hash": "f7cfccb07ee2e9311395f45d53ccfe0ee4dc21a76a39dba2be2529d27d22e3a2",
+      "lineRange": [
+        85,
+        96
+      ],
+      "structuredParams": [
+        {
+          "name": "rootDir",
+          "type": "string",
+          "isOptional": false,
+          "isRest": false
+        }
+      ],
+      "returnType": "boolean",
+      "isExported": false
+    },
+    {
+      "id": "src/cli/utils/detect-sources.ts:isSourceFile",
+      "name": "isSourceFile",
+      "kind": "function",
+      "filePath": "src/cli/utils/detect-sources.ts",
+      "isAsync": false,
+      "hash": "5ba30f5410f10c21e3bd4c4c99094f4777da1b7f23a6bfc15ef390188608607d",
+      "lineRange": [
+        96,
+        105
+      ],
+      "structuredParams": [
+        {
+          "name": "fileName",
+          "type": "string",
+          "isOptional": false,
+          "isRest": false
+        }
+      ],
+      "returnType": "boolean",
       "isExported": false
     },
     {
@@ -3871,12 +4017,28 @@
       "order": 2
     },
     {
+      "id": "src/cli/commands/init.ts:registerInitCommand->src/cli/utils/detect-sources.ts:detectIncludePatterns",
+      "source": "src/cli/commands/init.ts:registerInitCommand",
+      "target": "src/cli/utils/detect-sources.ts:detectIncludePatterns",
+      "type": "direct-call",
+      "isAsync": false,
+      "order": 0
+    },
+    {
+      "id": "src/cli/commands/init.ts:registerInitCommand->src/cli/commands/init.ts:splitGlobPatterns",
+      "source": "src/cli/commands/init.ts:registerInitCommand",
+      "target": "src/cli/commands/init.ts:splitGlobPatterns",
+      "type": "direct-call",
+      "isAsync": false,
+      "order": 1
+    },
+    {
       "id": "src/cli/commands/init.ts:registerInitCommand->src/cli/commands/init.ts:generateConfigYAML",
       "source": "src/cli/commands/init.ts:registerInitCommand",
       "target": "src/cli/commands/init.ts:generateConfigYAML",
       "type": "direct-call",
       "isAsync": false,
-      "order": 0
+      "order": 2
     },
     {
       "id": "src/cli/commands/serve.ts:registerServeCommand->src/cli/utils/config.ts:loadConfig",
@@ -4028,10 +4190,34 @@
         {
           "condition": "if (listItemMatch)",
           "branch": "then",
-          "branchGroup": "branch:52"
+          "branchGroup": "branch:53"
         }
       ],
       "label": "if (listItemMatch)",
+      "isAsync": false,
+      "order": 0
+    },
+    {
+      "id": "src/cli/utils/detect-sources.ts:containsSourceFiles->src/cli/utils/detect-sources.ts:scanDirectory",
+      "source": "src/cli/utils/detect-sources.ts:containsSourceFiles",
+      "target": "src/cli/utils/detect-sources.ts:scanDirectory",
+      "type": "direct-call",
+      "isAsync": false,
+      "order": 0
+    },
+    {
+      "id": "src/cli/utils/detect-sources.ts:hasRootLevelSourceFiles->src/cli/utils/detect-sources.ts:isSourceFile",
+      "source": "src/cli/utils/detect-sources.ts:hasRootLevelSourceFiles",
+      "target": "src/cli/utils/detect-sources.ts:isSourceFile",
+      "type": "conditional-call",
+      "conditions": [
+        {
+          "condition": "entry.isFile() &&",
+          "branch": "&&",
+          "branchGroup": "branch:94"
+        }
+      ],
+      "label": "entry.isFile() &&",
       "isAsync": false,
       "order": 0
     },

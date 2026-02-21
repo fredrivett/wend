@@ -1,18 +1,18 @@
 ---
 title: registerSyncCommand
-generated: 2026-02-21T14:29:22.443Z
+generated: 2026-02-21T15:16:37.165Z
 graphNode: src/cli/commands/sync.ts:registerSyncCommand
 dependencies:
   - path: src/cli/commands/sync.ts
     symbol: registerSyncCommand
-    hash: 0b4c6589b32724fb59d642e1339d4761873875b8efb2020bdc9fd9ee99b5a731
+    hash: 84646837b7c609306428fc819c8e64578952b34fec901a9645a2e5ee2b13c916
 ---
 
 # registerSyncCommand
 
 `exported`
 
-`function` in `src/cli/commands/sync.ts:9-127`
+`function` in `src/cli/commands/sync.ts:9-141`
 
 Register the `syncdocs sync` CLI command.
 

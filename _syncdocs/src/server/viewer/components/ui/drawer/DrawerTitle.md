@@ -1,6 +1,6 @@
 ---
 title: DrawerTitle
-generated: 2026-02-21T14:29:22.469Z
+generated: 2026-02-21T15:16:37.178Z
 graphNode: src/server/viewer/components/ui/drawer.tsx:DrawerTitle
 dependencies:
   - path: src/server/viewer/components/ui/drawer.tsx

@@ -3,6 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
+import { detectIncludePatterns } from '../utils/detect-sources.js';
 
 interface InitConfig {
   output: {
@@ -53,10 +54,13 @@ export function registerInitCommand(cli: CAC) {
       process.exit(0);
     }
 
+    const detectedIncludePatterns = detectIncludePatterns(process.cwd());
+    const includeInitialValue = detectedIncludePatterns.join(',');
+
     const includePattern = await p.text({
       message: 'Which files should be documented?',
-      placeholder: 'src/**/*.{ts,tsx,js,jsx}',
-      initialValue: 'src/**/*.{ts,tsx,js,jsx}',
+      placeholder: includeInitialValue,
+      initialValue: includeInitialValue,
     });
 
     if (p.isCancel(includePattern)) {
@@ -84,7 +88,7 @@ export function registerInitCommand(cli: CAC) {
         dir: outputDir as string,
       },
       scope: {
-        include: [includePattern as string],
+        include: splitGlobPatterns(includePattern as string),
         exclude: (excludePattern as string)
           .split(',')
           .map((p) => p.trim())
@@ -115,6 +119,42 @@ export function registerInitCommand(cli: CAC) {
 
     p.outro('Happy documenting!');
   });
+}
+
+/**
+ * Split a comma-separated glob list while preserving commas inside brace sets.
+ * Example: `<pattern-1>,<pattern-2>` => two patterns.
+ */
+function splitGlobPatterns(input: string): string[] {
+  const patterns: string[] = [];
+  let current = '';
+  let braceDepth = 0;
+
+  for (const char of input) {
+    if (char === '{') {
+      braceDepth += 1;
+    } else if (char === '}') {
+      braceDepth = Math.max(0, braceDepth - 1);
+    }
+
+    if (char === ',' && braceDepth === 0) {
+      const trimmed = current.trim();
+      if (trimmed) {
+        patterns.push(trimmed);
+      }
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  const trimmed = current.trim();
+  if (trimmed) {
+    patterns.push(trimmed);
+  }
+
+  return patterns;
 }
 
 /** Serialize an init config object to a YAML config file string. */

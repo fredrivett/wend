@@ -1,6 +1,6 @@
 ---
 title: entryPoints
-generated: 2026-02-21T14:29:22.454Z
+generated: 2026-02-21T15:16:37.171Z
 graphNode: src/graph/graph-query.ts:entryPoints
 dependencies:
   - path: src/graph/graph-query.ts
