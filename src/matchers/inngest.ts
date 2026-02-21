@@ -36,9 +36,8 @@ function extractFunctionId(body: string): string | null {
 export const inngestMatcher: FrameworkMatcher = {
   name: 'inngest',
 
+  /** Detect `inngest.createFunction(...)` assignments as Inngest function entry points. */
   detectEntryPoint(symbol: SymbolInfo, _filePath: string): EntryPointMatch | null {
-    // Detect inngest.createFunction(...) assignments
-    // These show up as kind: 'const' with body containing createFunction
     if (symbol.kind === 'const' && /createFunction\s*\(/.test(symbol.body)) {
       const eventTrigger = extractEventTrigger(symbol.body);
       const taskId = extractFunctionId(symbol.body);
@@ -55,10 +54,9 @@ export const inngestMatcher: FrameworkMatcher = {
     return null;
   },
 
+  /** Detect `inngest.send()` and `step.invoke()` calls as runtime connections. */
   detectConnections(symbol: SymbolInfo, _filePath: string): RuntimeConnection[] {
     const connections: RuntimeConnection[] = [];
-
-    // Detect inngest.send({ name: "..." }) or inngest.send({ name: '...' })
     const sendPattern = /\.send\s*\(\s*\{[^}]*name\s*:\s*['"`]([^'"`]+)['"`]/g;
     let match: RegExpExecArray | null;
     match = sendPattern.exec(symbol.body);
@@ -86,11 +84,11 @@ export const inngestMatcher: FrameworkMatcher = {
     return connections;
   },
 
+  /** Resolve an Inngest runtime connection to a concrete graph edge. Not yet implemented. */
   resolveConnection(
     _connection: RuntimeConnection,
     _projectFiles: string[],
   ): ResolvedConnection | null {
-    // TODO: resolve inngest.send() event names to createFunction definitions
     return null;
   },
 };

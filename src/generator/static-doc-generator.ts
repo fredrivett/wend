@@ -17,6 +17,7 @@ export interface StaticDocResult {
 export class StaticDocGenerator {
   private outputDir: string;
 
+  /** @param outputDir - Root directory where generated markdown files are written */
   constructor(outputDir: string) {
     this.outputDir = outputDir;
   }

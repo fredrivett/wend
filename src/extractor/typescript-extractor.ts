@@ -449,6 +449,7 @@ export class TypeScriptExtractor {
     return this.containsJsx(body);
   }
 
+  /** Recursively check whether an AST node contains any JSX elements or fragments. */
   private containsJsx(node: ts.Node): boolean {
     if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) {
       return true;

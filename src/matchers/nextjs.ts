@@ -46,8 +46,8 @@ function extractPagePath(filePath: string): string {
 export const nextjsMatcher: FrameworkMatcher = {
   name: 'nextjs',
 
+  /** Detect Next.js API routes, page components, middleware, and server actions. */
   detectEntryPoint(symbol: SymbolInfo, filePath: string): EntryPointMatch | null {
-    // API route handlers
     if (API_ROUTE_PATTERN.test(filePath) && HTTP_METHODS.includes(symbol.name)) {
       return {
         entryType: 'api-route',
@@ -97,10 +97,9 @@ export const nextjsMatcher: FrameworkMatcher = {
     return null;
   },
 
+  /** Detect `fetch("/api/...")` and `router.push()` calls as runtime connections. */
   detectConnections(symbol: SymbolInfo, _filePath: string): RuntimeConnection[] {
     const connections: RuntimeConnection[] = [];
-
-    // Detect fetch("/api/...") calls
     const fetchPattern = /fetch\s*\(\s*['"`](\/?api\/[^'"`]+)['"`]/g;
     let match: RegExpExecArray | null;
     match = fetchPattern.exec(symbol.body);
@@ -128,11 +127,11 @@ export const nextjsMatcher: FrameworkMatcher = {
     return connections;
   },
 
+  /** Resolve a Next.js runtime connection to a concrete graph edge. Not yet implemented. */
   resolveConnection(
     _connection: RuntimeConnection,
     _projectFiles: string[],
   ): ResolvedConnection | null {
-    // TODO: resolve fetch() calls to API route files, router.push() to page files
     return null;
   },
 };

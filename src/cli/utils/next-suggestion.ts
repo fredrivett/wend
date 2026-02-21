@@ -129,6 +129,7 @@ export function scanProject(outputDir: string, scope: SyncdocsConfig['scope']): 
   };
 }
 
+/** Yield to the event loop so spinner animations stay smooth during CPU-bound work. */
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 /**

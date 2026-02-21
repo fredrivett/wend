@@ -9,10 +9,12 @@ import type { FlowGraph } from './types.js';
 export class GraphStore {
   private outputDir: string;
 
+  /** @param outputDir - Root output directory (resolved relative to cwd) */
   constructor(outputDir: string) {
     this.outputDir = resolve(process.cwd(), outputDir);
   }
 
+  /** Absolute path to the `graph.json` file. */
   private get graphPath(): string {
     return join(this.outputDir, 'graph.json');
   }

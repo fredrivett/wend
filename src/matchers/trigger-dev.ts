@@ -27,9 +27,8 @@ function extractTaskId(body: string): string | null {
 export const triggerDevMatcher: FrameworkMatcher = {
   name: 'trigger-dev',
 
+  /** Detect `task({ id: "...", run: ... })` definitions as Trigger.dev entry points. */
   detectEntryPoint(symbol: SymbolInfo, _filePath: string): EntryPointMatch | null {
-    // Detect task({ id: "...", run: ... }) definitions
-    // These are extracted as kind: 'const' with body containing task(
     if (symbol.kind === 'const' && /^task\s*\(/.test(symbol.body)) {
       const taskId = extractTaskId(symbol.body);
 
@@ -44,11 +43,9 @@ export const triggerDevMatcher: FrameworkMatcher = {
     return null;
   },
 
+  /** Detect `tasks.trigger()`, `tasks.triggerAndWait()`, and `tasks.batchTrigger()` calls. */
   detectConnections(symbol: SymbolInfo, _filePath: string): RuntimeConnection[] {
     const connections: RuntimeConnection[] = [];
-
-    // Detect tasks.trigger("task-id"), tasks.triggerAndWait("task-id"), tasks.batchTrigger("task-id")
-    // Also handles TypeScript generics: tasks.trigger<typeof fooTask>("task-id")
     const triggerPattern =
       /\.(?:trigger|triggerAndWait|batchTrigger)\s*(?:<[^>]*>)?\s*\(\s*['"`]([^'"`]+)['"`]/g;
     let match: RegExpExecArray | null;
@@ -65,11 +62,11 @@ export const triggerDevMatcher: FrameworkMatcher = {
     return connections;
   },
 
+  /** Resolve a Trigger.dev runtime connection to a concrete graph edge. Not yet implemented. */
   resolveConnection(
     _connection: RuntimeConnection,
     _projectFiles: string[],
   ): ResolvedConnection | null {
-    // TODO: resolve task trigger strings to task definitions
     return null;
   },
 };

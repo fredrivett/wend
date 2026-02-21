@@ -15,6 +15,7 @@ export class StaleChecker {
   private hasher: ContentHasher;
   private parser: DocParser;
 
+  /** Initialize the checker with an extractor, hasher, and doc parser. */
   constructor() {
     this.extractor = new TypeScriptExtractor();
     this.hasher = new ContentHasher();
