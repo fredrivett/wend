@@ -639,16 +639,16 @@ export function getTemplate(): string {
 
     // Convert docPath (e.g. "src/checker/index/StaleChecker.md") to URL path
     function docPathToUrl(docPath) {
-      // Strip "src/" prefix and ".md" extension
-      return '/docs/' + docPath.replace(/^\\/?(src\\/)?/, '').replace(/\\.md$/, '');
+      // Strip ".md" extension
+      return '/docs/' + docPath.replace(/\\.md$/, '');
     }
 
     // Convert URL path back to docPath for API
     function urlToDocPath(pathname) {
-      // Strip "/docs/" prefix, add "src/" prefix and ".md" extension
+      // Strip "/docs/" prefix, add ".md" extension
       const rest = pathname.replace(/^\\/docs\\/?/, '');
       if (!rest) return null;
-      return 'src/' + rest + '.md';
+      return rest + '.md';
     }
 
     function updateActiveLink() {

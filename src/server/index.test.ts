@@ -245,7 +245,7 @@ describe('generateDependencyGraph', () => {
     const index = makeIndex([generatorEntry, extractorEntry]);
     const graph = generateDependencyGraph(generatorEntry, index);
 
-    // Doc paths are converted to clean URLs: src/extractor/.../file.md → /docs/extractor/.../file
-    expect(graph).toContain('/docs/extractor/typescript-extractor/type-script-extractor');
+    // Doc paths are converted to clean URLs: src/extractor/.../file.md → /docs/src/extractor/.../file
+    expect(graph).toContain('/docs/src/extractor/typescript-extractor/type-script-extractor');
   });
 });

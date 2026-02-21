@@ -124,7 +124,7 @@ export function generateDependencyGraph(entry: SymbolEntry, index: SymbolIndex):
     const targetId = safeId(name);
     lines.push(`    ${targetId}[${name}]`);
     lines.push(`    ${currentId} --> ${targetId}`);
-    const urlPath = `/docs/${target.docPath.replace(/^\/?src\//, '').replace(/\.md$/, '')}`;
+    const urlPath = `/docs/${target.docPath.replace(/\.md$/, '')}`;
     lines.push(`    click ${targetId} href "${urlPath}"`);
   }
 
