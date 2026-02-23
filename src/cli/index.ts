@@ -12,6 +12,7 @@ cli.version(version).help();
 import { registerCheckCommand } from './commands/check.js';
 // Register commands
 import { registerInitCommand } from './commands/init.js';
+import { registerJsDocCommand } from './commands/jsdoc.js';
 import { registerServeCommand } from './commands/serve.js';
 import { registerStatusCommand } from './commands/status.js';
 import { registerSyncCommand } from './commands/sync.js';
@@ -19,6 +20,7 @@ import { registerSyncCommand } from './commands/sync.js';
 registerInitCommand(cli);
 registerSyncCommand(cli);
 registerCheckCommand(cli);
+registerJsDocCommand(cli);
 registerServeCommand(cli);
 registerStatusCommand(cli);
 

@@ -21,6 +21,7 @@ interface DocResponse {
   kind?: string;
   exported?: boolean;
   isAsync?: boolean;
+  hasJsDoc?: boolean;
   deprecated?: string | boolean;
   lineRange?: string;
   entryType?: string;
@@ -166,6 +167,7 @@ export function DocPanel({ node, onClose }: DocPanelProps) {
               exported={doc.exported}
               isAsync={doc.isAsync}
               deprecated={doc.deprecated}
+              hasJsDoc={doc.hasJsDoc}
               lineRange={doc.lineRange}
               entryType={doc.entryType}
               httpMethod={doc.httpMethod}

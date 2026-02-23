@@ -63,12 +63,13 @@ export function renderNextSuggestion(candidate: NextCandidate): void {
 
 export interface ProjectScan {
   sourceFiles: string[];
-  allSymbols: { file: string; symbol: { name: string; hasJsDoc: boolean } }[];
+  allSymbols: { file: string; symbol: { name: string; hasJsDoc: boolean; isExported: boolean } }[];
   documentedSymbols: Set<string>;
   totalSymbols: number;
   documented: number;
   undocumented: number;
   coverage: number;
+  exportedSymbols: number;
   withJsDoc: number;
 }
 
@@ -79,7 +80,10 @@ export function scanProject(outputDir: string, scope: SyncdocsConfig['scope']): 
   const docsDir = resolve(process.cwd(), outputDir);
 
   const sourceFiles = findSourceFiles(process.cwd(), scope);
-  const allSymbols: { file: string; symbol: { name: string; hasJsDoc: boolean } }[] = [];
+  const allSymbols: {
+    file: string;
+    symbol: { name: string; hasJsDoc: boolean; isExported: boolean };
+  }[] = [];
 
   if (sourceFiles.length > 0) {
     const extractor = new TypeScriptExtractor();
@@ -89,7 +93,11 @@ export function scanProject(outputDir: string, scope: SyncdocsConfig['scope']): 
         for (const symbol of result.symbols) {
           allSymbols.push({
             file,
-            symbol: { name: symbol.name, hasJsDoc: symbol.jsDoc !== undefined },
+            symbol: {
+              name: symbol.name,
+              hasJsDoc: symbol.jsDoc !== undefined,
+              isExported: symbol.isExported ?? false,
+            },
           });
         }
       } catch {
@@ -121,7 +129,8 @@ export function scanProject(outputDir: string, scope: SyncdocsConfig['scope']): 
   ).length;
   const undocumented = totalSymbols - documented;
   const coverage = totalSymbols > 0 ? Math.round((documented / totalSymbols) * 100) : 0;
-  const withJsDoc = allSymbols.filter((s) => s.symbol.hasJsDoc).length;
+  const exportedSymbols = allSymbols.filter((s) => s.symbol.isExported).length;
+  const withJsDoc = allSymbols.filter((s) => s.symbol.isExported && s.symbol.hasJsDoc).length;
 
   return {
     sourceFiles,
@@ -131,6 +140,7 @@ export function scanProject(outputDir: string, scope: SyncdocsConfig['scope']): 
     documented,
     undocumented,
     coverage,
+    exportedSymbols,
     withJsDoc,
   };
 }
@@ -152,7 +162,10 @@ export async function scanProjectAsync(
   // Phase 1: find source files (async fs, yields naturally at each I/O)
   const sourceFiles = await findSourceFilesAsync(process.cwd(), scope);
 
-  const allSymbols: { file: string; symbol: { name: string; hasJsDoc: boolean } }[] = [];
+  const allSymbols: {
+    file: string;
+    symbol: { name: string; hasJsDoc: boolean; isExported: boolean };
+  }[] = [];
 
   if (sourceFiles.length > 0) {
     onProgress?.(`Analyzing ${sourceFiles.length} source files`);
@@ -166,7 +179,11 @@ export async function scanProjectAsync(
         for (const symbol of result.symbols) {
           allSymbols.push({
             file: sourceFiles[i],
-            symbol: { name: symbol.name, hasJsDoc: symbol.jsDoc !== undefined },
+            symbol: {
+              name: symbol.name,
+              hasJsDoc: symbol.jsDoc !== undefined,
+              isExported: symbol.isExported ?? false,
+            },
           });
         }
       } catch {
@@ -203,7 +220,8 @@ export async function scanProjectAsync(
   ).length;
   const undocumented = totalSymbols - documented;
   const coverage = totalSymbols > 0 ? Math.round((documented / totalSymbols) * 100) : 0;
-  const withJsDoc = allSymbols.filter((s) => s.symbol.hasJsDoc).length;
+  const exportedSymbols = allSymbols.filter((s) => s.symbol.isExported).length;
+  const withJsDoc = allSymbols.filter((s) => s.symbol.isExported && s.symbol.hasJsDoc).length;
 
   return {
     sourceFiles,
@@ -213,6 +231,7 @@ export async function scanProjectAsync(
     documented,
     undocumented,
     coverage,
+    exportedSymbols,
     withJsDoc,
   };
 }
@@ -287,8 +306,8 @@ export function renderCoverageStats(scan: ProjectScan): void {
  */
 export function renderJsDocCoverageStats(scan: ProjectScan): void {
   const jsDocCoverage =
-    scan.totalSymbols > 0 ? Math.round((scan.withJsDoc / scan.totalSymbols) * 100) : 0;
-  const withoutJsDoc = scan.totalSymbols - scan.withJsDoc;
+    scan.exportedSymbols > 0 ? Math.round((scan.withJsDoc / scan.exportedSymbols) * 100) : 0;
+  const withoutJsDoc = scan.exportedSymbols - scan.withJsDoc;
   const barWidth = 30;
   const filled = Math.round((jsDocCoverage / 100) * barWidth);
   const empty = barWidth - filled;
@@ -304,12 +323,55 @@ export function renderJsDocCoverageStats(scan: ProjectScan): void {
 
   p.log.message(
     [
-      `With JSDoc: ${scan.withJsDoc}`,
-      `Without JSDoc: ${withoutJsDoc}`,
+      `Exported with JSDoc: ${scan.withJsDoc}`,
+      `Exported without JSDoc: ${withoutJsDoc}`,
       '',
-      `${coverageColor} JSDoc Coverage: ${bar} ${jsDocCoverage}%`,
+      `${coverageColor} JSDoc Coverage (exported): ${bar} ${jsDocCoverage}%`,
     ].join('\n'),
   );
+}
+
+/**
+ * Render the list of symbols missing JSDoc comments, grouped by file.
+ *
+ * Shows all symbols when `verbose` is true or when the total count is 20 or fewer.
+ * Otherwise, prints a hint to use --verbose.
+ *
+ * @param scan - Project scan result containing symbol data
+ * @param verbose - Whether to force-show all symbols regardless of count
+ */
+export function renderMissingJsDocList(scan: ProjectScan, verbose: boolean): void {
+  const withoutJsDoc = scan.exportedSymbols - scan.withJsDoc;
+
+  if (withoutJsDoc === 0) return;
+
+  if (verbose || withoutJsDoc <= 20) {
+    const missingJsDoc = scan.allSymbols.filter((s) => s.symbol.isExported && !s.symbol.hasJsDoc);
+
+    const byFile = new Map<string, string[]>();
+    for (const { file, symbol } of missingJsDoc) {
+      const relativePath = getRelativePath(file);
+      if (!byFile.has(relativePath)) {
+        byFile.set(relativePath, []);
+      }
+      byFile.get(relativePath)?.push(symbol.name);
+    }
+
+    const lines: string[] = [];
+    for (const [file, symbols] of byFile) {
+      lines.push(`\u{1F4C4} ${file}`);
+      for (const sym of symbols) {
+        lines.push(`   \u2022 ${sym}`);
+      }
+    }
+
+    p.log.warn('Symbols missing JSDoc:');
+    p.log.message(lines.join('\n'));
+  } else {
+    p.log.message(
+      `\u{1F4A1} \x1b[3mUse --verbose to see all ${withoutJsDoc} symbols missing JSDoc\x1b[23m`,
+    );
+  }
 }
 
 /**

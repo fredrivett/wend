@@ -342,10 +342,10 @@ describe('StaticDocGenerator', () => {
       expect(content).toMatch(/^---[\s\S]*hasJsDoc: false[\s\S]*---/);
     });
 
-    it('should render warning when hasJsDoc is false and no description', () => {
+    it('should not render inline warning when hasJsDoc is false (handled by viewer)', () => {
       const node = makeNode({ hasJsDoc: false });
       const content = generateAndRead(node);
-      expect(content).toContain('\u26A0\uFE0F **No JSDoc comment found**');
+      expect(content).not.toContain('No JSDoc comment found');
     });
 
     it('should not render warning when hasJsDoc is true', () => {

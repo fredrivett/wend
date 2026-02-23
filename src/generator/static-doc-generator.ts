@@ -99,9 +99,6 @@ export class StaticDocGenerator {
     if (node.description) {
       lines.push(node.description);
       lines.push('');
-    } else if (node.hasJsDoc === false) {
-      lines.push('\u26A0\uFE0F **No JSDoc comment found**');
-      lines.push('');
     }
 
     // Parameters table
