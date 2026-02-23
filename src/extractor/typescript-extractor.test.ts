@@ -1739,15 +1739,69 @@ function sum(...numbers: number[]) { return 0 }
       expect(result.symbols[0].structuredParams).toEqual([]);
     });
 
-    it('should handle destructured object param', () => {
+    it('should expand destructured object param into individual params', () => {
       const code = `
 function f({ name, age }: { name: string; age: number }) { return name }
 `;
       writeFileSync(TEST_FILE, code);
       const result = extractor.extractSymbols(TEST_FILE);
-      const param = result.symbols[0].structuredParams?.[0];
-      expect(param?.name).toBe('{ name, age }');
-      expect(param?.type).toBe('{ name: string; age: number }');
+      expect(result.symbols[0].structuredParams).toEqual([
+        { name: 'name', type: 'string', isOptional: false, isRest: false },
+        { name: 'age', type: 'number', isOptional: false, isRest: false },
+      ]);
+    });
+
+    it('should detect optional properties in destructured object param', () => {
+      const code = `
+function f({ name, title }: { name: string; title?: string }) { return name }
+`;
+      writeFileSync(TEST_FILE, code);
+      const result = extractor.extractSymbols(TEST_FILE);
+      expect(result.symbols[0].structuredParams).toEqual([
+        { name: 'name', type: 'string', isOptional: false, isRest: false },
+        { name: 'title', type: 'string', isOptional: true, isRest: false },
+      ]);
+    });
+
+    it('should handle destructured param with default values', () => {
+      const code = `
+function f({ name, count = 0 }: { name: string; count?: number }) { return name }
+`;
+      writeFileSync(TEST_FILE, code);
+      const result = extractor.extractSymbols(TEST_FILE);
+      expect(result.symbols[0].structuredParams?.[1]).toMatchObject({
+        name: 'count',
+        type: 'number',
+        isOptional: true,
+        defaultValue: '0',
+      });
+    });
+
+    it('should handle destructured param with named type reference', () => {
+      const code = `
+interface Props { name: string; age: number }
+function f({ name, age }: Props) { return name }
+`;
+      writeFileSync(TEST_FILE, code);
+      const result = extractor.extractSymbols(TEST_FILE);
+      expect(result.symbols[0].structuredParams).toEqual([
+        { name: 'name', type: 'unknown', isOptional: false, isRest: false },
+        { name: 'age', type: 'unknown', isOptional: false, isRest: false },
+      ]);
+    });
+
+    it('should merge JSDoc descriptions into destructured params', () => {
+      const code = `
+/**
+ * @param name - The user name
+ * @param age - The user age
+ */
+function f({ name, age }: { name: string; age: number }) { return name }
+`;
+      writeFileSync(TEST_FILE, code);
+      const result = extractor.extractSymbols(TEST_FILE);
+      expect(result.symbols[0].structuredParams?.[0].description).toBe('The user name');
+      expect(result.symbols[0].structuredParams?.[1].description).toBe('The user age');
     });
 
     it('should preserve complex generic type', () => {

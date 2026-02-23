@@ -180,6 +180,16 @@ describe('StaticDocGenerator', () => {
       expect(content).toContain('The user name');
     });
 
+    it('should escape pipe characters in type column', () => {
+      const node = makeNode({
+        structuredParams: [
+          { name: 'value', type: 'string | null', isOptional: false, isRest: false },
+        ],
+      });
+      const content = generateAndRead(node);
+      expect(content).toContain('| value | `string \\| null` | Yes |');
+    });
+
     it('should not render parameters section when structuredParams is empty', () => {
       const node = makeNode({ structuredParams: [] });
       const content = generateAndRead(node);

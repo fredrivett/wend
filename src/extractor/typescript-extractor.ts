@@ -478,7 +478,48 @@ export class TypeScriptExtractor {
       }
     }
 
-    return parameters.map((param) => {
+    const result: ParamInfo[] = [];
+
+    for (const param of parameters) {
+      // Expand destructured object parameters into individual entries
+      if (ts.isObjectBindingPattern(param.name)) {
+        const propertyTypes = new Map<string, { type: string; isOptional: boolean }>();
+        if (param.type && ts.isTypeLiteralNode(param.type)) {
+          for (const member of param.type.members) {
+            if (ts.isPropertySignature(member) && member.name) {
+              const propName = member.name.getText(sourceFile);
+              const propType = member.type ? member.type.getText(sourceFile) : 'unknown';
+              propertyTypes.set(propName, { type: propType, isOptional: !!member.questionToken });
+            }
+          }
+        }
+
+        for (const element of param.name.elements) {
+          if (ts.isOmittedExpression(element)) continue;
+          const elemName = element.name.getText(sourceFile);
+          const lookupName = element.propertyName
+            ? element.propertyName.getText(sourceFile)
+            : elemName;
+          const propInfo = propertyTypes.get(lookupName);
+          const type = propInfo?.type ?? 'unknown';
+          const isOptional = propInfo?.isOptional ?? false;
+          const defaultValue = element.initializer
+            ? element.initializer.getText(sourceFile)
+            : undefined;
+          const description = paramDescriptions.get(elemName) ?? paramDescriptions.get(lookupName);
+
+          result.push({
+            name: elemName,
+            type,
+            isOptional: isOptional || !!element.initializer,
+            isRest: false,
+            ...(defaultValue !== undefined && { defaultValue }),
+            ...(description !== undefined && { description }),
+          });
+        }
+        continue;
+      }
+
       const name = param.name.getText(sourceFile);
       const type = param.type ? param.type.getText(sourceFile) : 'unknown';
       const isOptional = !!param.questionToken || !!param.initializer;
@@ -486,15 +527,17 @@ export class TypeScriptExtractor {
       const defaultValue = param.initializer ? param.initializer.getText(sourceFile) : undefined;
       const description = paramDescriptions.get(name);
 
-      return {
+      result.push({
         name,
         type,
         isOptional,
         isRest,
         ...(defaultValue !== undefined && { defaultValue }),
         ...(description !== undefined && { description }),
-      };
-    });
+      });
+    }
+
+    return result;
   }
 
   /**

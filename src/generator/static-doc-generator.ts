@@ -108,10 +108,12 @@ export class StaticDocGenerator {
       lines.push('|---|---|---|---|');
       for (const param of node.structuredParams) {
         const name = param.isRest ? `...${param.name}` : param.name;
-        const type = `\`${param.type}\``;
+        const type = `\`${param.type.replace(/\|/g, '\\|')}\``;
         const required = param.isOptional ? 'No' : 'Yes';
-        const defaultNote = param.defaultValue ? ` (default: \`${param.defaultValue}\`)` : '';
-        const desc = (param.description ?? '') + defaultNote;
+        const defaultNote = param.defaultValue
+          ? ` (default: \`${param.defaultValue.replace(/\|/g, '\\|')}\`)`
+          : '';
+        const desc = ((param.description ?? '') + defaultNote).replace(/\|/g, '\\|');
         lines.push(`| ${name} | ${type} | ${required} | ${desc} |`);
       }
       lines.push('');

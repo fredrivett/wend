@@ -198,6 +198,29 @@ a.tree-item.active {
   max-width: 100%;
 }
 
+.doc-view #doc-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.doc-view #doc-content th {
+  text-align: left;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--border);
+}
+
+.doc-view #doc-content td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.doc-view #doc-content tr:last-child td {
+  border-bottom: none;
+}
+
 .doc-view #doc-content h2 {
   font-size: 20px;
   margin-top: 24px;
