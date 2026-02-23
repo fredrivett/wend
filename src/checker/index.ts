@@ -1,32 +1,34 @@
 /**
- * Staleness checker - detects when docs are out of sync with code
+ * Staleness checker - detects when graph.json is out of sync with source code
  */
 
-import { existsSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 import { resolveSourcePath } from '../cli/utils/paths.js';
 import { TypeScriptExtractor } from '../extractor/index.js';
+import { GraphStore } from '../graph/graph-store.js';
 import { ContentHasher } from '../hasher/index.js';
-import { DocParser } from './doc-parser.js';
 import type { CheckResult, StaleDependency, StaleDoc } from './types.js';
 
-/** Detects when generated docs are out of sync with source code by comparing content hashes. */
+/** Detects when graph.json is out of sync with source code by comparing content hashes. */
 export class StaleChecker {
   private extractor: TypeScriptExtractor;
   private hasher: ContentHasher;
-  private parser: DocParser;
 
-  /** Initialize the checker with an extractor, hasher, and doc parser. */
+  /** Initialize the checker with an extractor and hasher. */
   constructor() {
     this.extractor = new TypeScriptExtractor();
     this.hasher = new ContentHasher();
-    this.parser = new DocParser();
   }
 
   /**
-   * Check all docs in a directory for staleness
+   * Check all nodes in graph.json for staleness.
+   *
+   * Reads graph.json from the output directory, then for each node compares
+   * the stored hash against a freshly computed hash from source.
+   *
+   * @param outputDir - Path to the syncdocs output directory (e.g. `_syncdocs`)
    */
-  checkDocs(docsDir: string): CheckResult {
+  checkGraph(outputDir: string): CheckResult {
     const result: CheckResult = {
       totalDocs: 0,
       staleDocs: [],
@@ -34,142 +36,84 @@ export class StaleChecker {
       errors: [],
     };
 
-    if (!existsSync(docsDir)) {
-      result.errors.push(`Docs directory not found: ${docsDir}`);
+    const store = new GraphStore(outputDir);
+    const graph = store.read();
+
+    if (!graph) {
+      result.errors.push(`Graph not found in ${outputDir}. Run: syncdocs sync`);
       return result;
     }
 
-    // Find all markdown files recursively
-    const docFiles = this.findMarkdownFiles(docsDir);
-    result.totalDocs = docFiles.length;
+    result.totalDocs = graph.nodes.length;
 
-    for (const docPath of docFiles) {
+    for (const node of graph.nodes) {
       try {
-        const staleInfo = this.checkDoc(docPath);
-        if (staleInfo) {
-          result.staleDocs.push(staleInfo);
+        const sourcePath = resolveSourcePath(node.filePath);
+
+        if (!existsSync(sourcePath)) {
+          result.staleDocs.push({
+            nodeId: node.id,
+            reason: `${node.filePath} not found`,
+            staleDependencies: [
+              {
+                path: node.filePath,
+                symbol: node.name,
+                oldHash: node.hash,
+                newHash: '',
+                reason: 'file-not-found',
+              },
+            ],
+          });
+          continue;
+        }
+
+        const currentSymbol = this.extractor.extractSymbol(sourcePath, node.name);
+
+        if (!currentSymbol) {
+          result.staleDocs.push({
+            nodeId: node.id,
+            reason: `${node.filePath}:${node.name} not found`,
+            staleDependencies: [
+              {
+                path: node.filePath,
+                symbol: node.name,
+                oldHash: node.hash,
+                newHash: '',
+                reason: 'not-found',
+              },
+            ],
+          });
+          continue;
+        }
+
+        const currentHash = this.hasher.hashSymbol(currentSymbol);
+
+        if (currentHash !== node.hash) {
+          result.staleDocs.push({
+            nodeId: node.id,
+            reason: `${node.filePath}:${node.name} changed`,
+            staleDependencies: [
+              {
+                path: node.filePath,
+                symbol: node.name,
+                oldHash: node.hash,
+                newHash: currentHash,
+                reason: 'changed',
+              },
+            ],
+          });
         } else {
-          result.upToDate.push(docPath);
+          result.upToDate.push(node.id);
         }
       } catch (error) {
         result.errors.push(
-          `Error checking ${docPath}: ${error instanceof Error ? error.message : String(error)}`,
+          `Error checking ${node.id}: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
 
     return result;
   }
-
-  /**
-   * Check a single doc file for staleness
-   * Returns StaleDoc if stale, null if up to date
-   */
-  checkDoc(docPath: string): StaleDoc | null {
-    const metadata = this.parser.parseDocFile(docPath);
-    const staleDeps: StaleDependency[] = [];
-
-    for (const dep of metadata.dependencies) {
-      // Resolve paths (handles relative paths and foreign worktree paths)
-      const depPath = resolveSourcePath(dep.path);
-
-      // Check if source file exists
-      if (!existsSync(depPath)) {
-        staleDeps.push({
-          path: dep.path,
-          symbol: dep.symbol,
-          oldHash: dep.hash,
-          newHash: '',
-          reason: 'file-not-found',
-        });
-        continue;
-      }
-
-      // Extract current symbol
-      const currentSymbol = this.extractor.extractSymbol(depPath, dep.symbol);
-
-      if (!currentSymbol) {
-        staleDeps.push({
-          path: dep.path,
-          symbol: dep.symbol,
-          oldHash: dep.hash,
-          newHash: '',
-          reason: 'not-found',
-        });
-        continue;
-      }
-
-      // Hash current symbol
-      const currentHash = this.hasher.hashSymbol(currentSymbol);
-
-      // Compare hashes
-      if (currentHash !== dep.hash) {
-        staleDeps.push({
-          path: dep.path,
-          symbol: dep.symbol,
-          oldHash: dep.hash,
-          newHash: currentHash,
-          reason: 'changed',
-        });
-      }
-    }
-
-    if (staleDeps.length > 0) {
-      return {
-        docPath,
-        reason: this.formatStaleReason(staleDeps),
-        staleDependencies: staleDeps,
-      };
-    }
-
-    return null;
-  }
-
-  /**
-   * Find all markdown files in a directory recursively
-   */
-  private findMarkdownFiles(dir: string): string[] {
-    const files: string[] = [];
-
-    const items = readdirSync(dir);
-    for (const item of items) {
-      const fullPath = join(dir, item);
-      const stat = statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        // Skip certain directories
-        if (item === 'node_modules' || item === '.git') {
-          continue;
-        }
-        files.push(...this.findMarkdownFiles(fullPath));
-      } else if (item.endsWith('.md')) {
-        files.push(fullPath);
-      }
-    }
-
-    return files;
-  }
-
-  /**
-   * Format a human-readable reason for staleness
-   */
-  private formatStaleReason(staleDeps: StaleDependency[]): string {
-    const reasons = staleDeps.map((dep) => {
-      switch (dep.reason) {
-        case 'changed':
-          return `${dep.path}:${dep.symbol} changed`;
-        case 'not-found':
-          return `${dep.path}:${dep.symbol} not found`;
-        case 'file-not-found':
-          return `${dep.path} not found`;
-        default:
-          return `${dep.path}:${dep.symbol} unknown issue`;
-      }
-    });
-
-    return reasons.join(', ');
-  }
 }
 
-export { DocParser } from './doc-parser.js';
 export * from './types.js';

@@ -1,7 +1,6 @@
 import { resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
-import { StaticDocGenerator } from '../../generator/static-doc-generator.js';
 import { GraphBuilder } from '../../graph/graph-builder.js';
 import { entryPoints } from '../../graph/graph-query.js';
 import { GraphStore } from '../../graph/graph-store.js';
@@ -11,12 +10,12 @@ import { findSourceFiles } from '../utils/next-suggestion.js';
 /**
  * Register the `syncdocs sync` CLI command.
  *
- * Finds source files, builds the dependency graph, and generates static
- * markdown documentation for every node. Optionally filters to a target path.
+ * Finds source files, builds the dependency graph, and writes graph.json.
+ * Optionally filters to a target path.
  */
 export function registerSyncCommand(cli: CAC) {
   cli
-    .command('sync [target]', 'Build graph and generate documentation')
+    .command('sync [target]', 'Build dependency graph')
     .example('syncdocs sync')
     .example('syncdocs sync src/api/')
     .action(async (target?: string) => {
@@ -29,7 +28,6 @@ export function registerSyncCommand(cli: CAC) {
           process.exit(1);
         }
 
-        const outputDir = resolve(process.cwd(), config.outputDir);
         const spinner = p.spinner();
 
         // Find source files
@@ -83,32 +81,6 @@ export function registerSyncCommand(cli: CAC) {
 
         spinner.stop('Graph saved');
 
-        // Generate static docs
-        spinner.start('Generating documentation');
-
-        const docGenerator = new StaticDocGenerator(outputDir);
-        let succeeded = 0;
-        let failed = 0;
-        const errors: string[] = [];
-
-        for (const node of graph.nodes) {
-          const result = docGenerator.generateForNode(node, graph);
-          if (result.success) {
-            succeeded++;
-          } else {
-            failed++;
-            errors.push(`  ${result.symbolName}: ${result.error}`);
-          }
-        }
-
-        spinner.stop(
-          `Generated ${succeeded} doc${succeeded === 1 ? '' : 's'}${failed > 0 ? `, ${failed} failed` : ''}`,
-        );
-
-        if (errors.length > 0) {
-          p.log.warn(`Errors:\n${errors.join('\n')}`);
-        }
-
         // Report stats
         const entries = entryPoints(graph);
         const edgesByType = new Map<string, number>();
@@ -120,7 +92,6 @@ export function registerSyncCommand(cli: CAC) {
           `Nodes: ${graph.nodes.length}`,
           `Edges: ${graph.edges.length}`,
           `Entry points: ${entries.length}`,
-          `Docs generated: ${succeeded}`,
         ];
 
         if (edgesByType.size > 0) {

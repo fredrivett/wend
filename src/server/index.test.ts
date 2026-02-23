@@ -1,279 +1,204 @@
+/**
+ * Tests for graph-based server index and doc building.
+ *
+ * The server's internal functions (buildSymbolIndexFromGraph, buildDocResponse,
+ * buildIndexResponse) are not exported. These tests verify the graph renderer
+ * and doc path computation that the server depends on.
+ */
+
 import { describe, expect, it } from 'vitest';
-import type { SymbolEntry, SymbolIndex } from './index.js';
-import { extractOverview, extractRelatedSymbols, generateDependencyGraph } from './index.js';
+import { getDocPath, renderNodeMarkdown } from '../graph/graph-renderer.js';
+import type { FlowGraph, GraphNode } from '../graph/types.js';
 
-describe('extractOverview', () => {
-  it('extracts text between title and first details block', () => {
-    const content = `---
-title: MyClass
-generated: 2026-01-01
-dependencies: []
----
-# MyClass
+function makeNode(overrides: Partial<GraphNode> & { id: string; name: string }): GraphNode {
+  return {
+    kind: 'function',
+    filePath: 'src/test.ts',
+    isAsync: false,
+    hash: 'abc123',
+    lineRange: [1, 5] as [number, number],
+    ...overrides,
+  };
+}
 
-This is the overview paragraph.
+function makeGraph(nodes: GraphNode[], edges: FlowGraph['edges'] = []): FlowGraph {
+  return {
+    version: '1.0',
+    generatedAt: '2026-02-23T00:00:00Z',
+    nodes,
+    edges,
+  };
+}
 
-<details>
-<summary>Visual Flow</summary>
-Some content
-</details>`;
-
-    expect(extractOverview(content)).toBe('This is the overview paragraph.');
+describe('getDocPath', () => {
+  it('computes doc path from node filePath and name', () => {
+    const node = makeNode({
+      id: 'src/checker/index.ts:StaleChecker',
+      name: 'StaleChecker',
+      filePath: 'src/checker/index.ts',
+    });
+    expect(getDocPath(node)).toBe('src/checker/index/StaleChecker.md');
   });
 
-  it('extracts multi-line overview', () => {
-    const content = `---
-title: Foo
----
-# Foo
-
-First line of overview.
-Second line of overview.
-
-<details>
-<summary>Methods</summary>
-</details>`;
-
-    expect(extractOverview(content)).toBe('First line of overview.\nSecond line of overview.');
+  it('handles nested paths', () => {
+    const node = makeNode({
+      id: 'src/cli/commands/sync.ts:registerSyncCommand',
+      name: 'registerSyncCommand',
+      filePath: 'src/cli/commands/sync.ts',
+    });
+    expect(getDocPath(node)).toBe('src/cli/commands/sync/registerSyncCommand.md');
   });
 
-  it('stops at ## heading', () => {
-    const content = `---
-title: Bar
----
-# Bar
-
-Overview text.
-
-## Section`;
-
-    expect(extractOverview(content)).toBe('Overview text.');
-  });
-
-  it('returns full text when no details or heading follows', () => {
-    const content = `---
-title: Simple
----
-# Simple
-
-Just an overview with no sections.`;
-
-    expect(extractOverview(content)).toBe('Just an overview with no sections.');
-  });
-
-  it('handles empty overview', () => {
-    const content = `---
-title: Empty
----
-# Empty
-
-<details>
-<summary>Visual Flow</summary>
-</details>`;
-
-    expect(extractOverview(content)).toBe('');
+  it('handles .tsx extensions', () => {
+    const node = makeNode({ id: 'src/app.tsx:App', name: 'App', filePath: 'src/app.tsx' });
+    expect(getDocPath(node)).toBe('src/app/App.md');
   });
 });
 
-describe('extractRelatedSymbols', () => {
-  it('extracts backtick-wrapped symbol names', () => {
-    const content = `
-<details>
-<summary>Related</summary>
+describe('renderNodeMarkdown', () => {
+  it('renders title and description', () => {
+    const node = makeNode({
+      id: 'src/test.ts:myFunc',
+      name: 'myFunc',
+      description: 'A test function.',
+    });
+    const graph = makeGraph([node]);
+    const md = renderNodeMarkdown(node, graph);
 
-- \`TypeScriptExtractor\` - Extracts symbols
-- \`ContentHasher\` - Generates hashes
-
-</details>`;
-
-    expect(extractRelatedSymbols(content, 'Generator')).toEqual([
-      'TypeScriptExtractor',
-      'ContentHasher',
-    ]);
+    expect(md).toContain('# myFunc');
+    expect(md).toContain('A test function.');
   });
 
-  it('extracts bold symbol names', () => {
-    const content = `
-<details>
-<summary>Related</summary>
+  it('renders parameters table', () => {
+    const node = makeNode({
+      id: 'src/test.ts:add',
+      name: 'add',
+      structuredParams: [
+        { name: 'a', type: 'number', isOptional: false, isRest: false },
+        { name: 'b', type: 'number', isOptional: true, isRest: false, defaultValue: '0' },
+      ],
+    });
+    const graph = makeGraph([node]);
+    const md = renderNodeMarkdown(node, graph);
 
-- **SymbolInfo Interface** - The input type
-- **ContentHasher** - Generates hashes
-
-</details>`;
-
-    expect(extractRelatedSymbols(content, 'Generator')).toEqual(['SymbolInfo', 'ContentHasher']);
+    expect(md).toContain('**Parameters:**');
+    expect(md).toContain('| a | `number` | Yes |');
+    expect(md).toContain('| b | `number` | No |');
+    expect(md).toContain('(default: `0`)');
   });
 
-  it('extracts both backtick and bold, deduplicating', () => {
-    const content = `
-<details>
-<summary>Related</summary>
+  it('renders rest parameters', () => {
+    const node = makeNode({
+      id: 'src/test.ts:concat',
+      name: 'concat',
+      structuredParams: [{ name: 'items', type: 'string[]', isOptional: false, isRest: true }],
+    });
+    const graph = makeGraph([node]);
+    const md = renderNodeMarkdown(node, graph);
 
-- \`ContentHasher\` - Generates hashes
-- **ContentHasher** - Also mentioned in bold
-
-</details>`;
-
-    expect(extractRelatedSymbols(content, 'Generator')).toEqual(['ContentHasher']);
+    expect(md).toContain('| ...items |');
   });
 
-  it('filters out self-references', () => {
-    const content = `
-<details>
-<summary>Related</summary>
+  it('renders return type', () => {
+    const node = makeNode({ id: 'src/test.ts:getNum', name: 'getNum', returnType: 'number' });
+    const graph = makeGraph([node]);
+    const md = renderNodeMarkdown(node, graph);
 
-- \`SyncDocsError\` extends the native Error class
-- \`instanceof\` operator for type checking \`SyncDocsError\` instances
-
-</details>`;
-
-    expect(extractRelatedSymbols(content, 'SyncDocsError')).toEqual([]);
+    expect(md).toContain('**Returns:** `number`');
   });
 
-  it('strips () from function-style names', () => {
-    const content = `
-<details>
-<summary>Related</summary>
+  it('renders calls table from outgoing edges', () => {
+    const caller = makeNode({ id: 'src/a.ts:caller', name: 'caller', filePath: 'src/a.ts' });
+    const callee = makeNode({ id: 'src/b.ts:callee', name: 'callee', filePath: 'src/b.ts' });
+    const graph = makeGraph(
+      [caller, callee],
+      [{ id: 'e1', source: 'src/a.ts:caller', target: 'src/b.ts:callee', type: 'direct-call' }],
+    );
+    const md = renderNodeMarkdown(caller, graph);
 
-- \`getPromptForStyle()\` - Generates prompts
-- \`generateConfigYAML()\` - Converts config
-
-</details>`;
-
-    // These start with lowercase so won't match the [A-Z] pattern
-    expect(extractRelatedSymbols(content, 'Foo')).toEqual([]);
+    expect(md).toContain('**Calls:**');
+    expect(md).toContain('| `callee` | `src/b.ts` | direct-call |');
   });
 
-  it('extracts PascalCase function names with parens', () => {
-    const content = `
-<details>
-<summary>Related</summary>
+  it('renders called-by table from incoming edges', () => {
+    const caller = makeNode({ id: 'src/a.ts:caller', name: 'caller', filePath: 'src/a.ts' });
+    const callee = makeNode({ id: 'src/b.ts:callee', name: 'callee', filePath: 'src/b.ts' });
+    const graph = makeGraph(
+      [caller, callee],
+      [{ id: 'e1', source: 'src/a.ts:caller', target: 'src/b.ts:callee', type: 'direct-call' }],
+    );
+    const md = renderNodeMarkdown(callee, graph);
 
-- \`MyHelper()\` - Does things
-
-</details>`;
-
-    expect(extractRelatedSymbols(content, 'Foo')).toEqual(['MyHelper']);
+    expect(md).toContain('**Called by:**');
+    expect(md).toContain('| `caller` | `src/a.ts` | direct-call |');
   });
 
-  it('returns empty array when no Related section', () => {
-    const content = `# Just a doc\n\nNo related section here.`;
-    expect(extractRelatedSymbols(content, 'Foo')).toEqual([]);
-  });
-});
+  it('renders examples', () => {
+    const node = makeNode({
+      id: 'src/test.ts:greet',
+      name: 'greet',
+      examples: ['greet("world")'],
+    });
+    const graph = makeGraph([node]);
+    const md = renderNodeMarkdown(node, graph);
 
-describe('generateDependencyGraph', () => {
-  function makeIndex(entries: SymbolEntry[]): SymbolIndex {
-    const entriesMap = new Map<string, SymbolEntry>();
-    const byName = new Map<string, SymbolEntry[]>();
-    for (const entry of entries) {
-      entriesMap.set(entry.docPath, entry);
-      const existing = byName.get(entry.name) ?? [];
-      existing.push(entry);
-      byName.set(entry.name, existing);
-    }
-    return { entries: entriesMap, byName };
-  }
-
-  const generatorEntry: SymbolEntry = {
-    name: 'Generator',
-    docPath: 'src/generator/index/generator.md',
-    sourcePath: 'src/generator/index.ts',
-    overview: 'A doc generator',
-    related: ['TypeScriptExtractor', 'AIClient', 'ContentHasher'],
-  };
-
-  const extractorEntry: SymbolEntry = {
-    name: 'TypeScriptExtractor',
-    docPath: 'src/extractor/typescript-extractor/type-script-extractor.md',
-    sourcePath: 'src/extractor/typescript-extractor.ts',
-    overview: 'Extracts symbols',
-    related: [],
-  };
-
-  const hasherEntry: SymbolEntry = {
-    name: 'ContentHasher',
-    docPath: 'src/hasher/index/content-hasher.md',
-    sourcePath: 'src/hasher/index.ts',
-    overview: 'Hashes content',
-    related: [],
-  };
-
-  it('generates mermaid with click directives for documented symbols', () => {
-    const index = makeIndex([generatorEntry, extractorEntry, hasherEntry]);
-    const graph = generateDependencyGraph(generatorEntry, index);
-
-    expect(graph).not.toBeNull();
-    expect(graph).toContain('flowchart LR');
-    expect(graph).toContain('Generator[Generator]:::current');
-    expect(graph).toContain('TypeScriptExtractor[TypeScriptExtractor]');
-    expect(graph).toContain('Generator --> TypeScriptExtractor');
-    expect(graph).toContain('click TypeScriptExtractor href');
-    expect(graph).toContain('ContentHasher[ContentHasher]');
-    expect(graph).toContain('Generator --> ContentHasher');
-    expect(graph).toContain('click ContentHasher href');
+    expect(md).toContain('**Examples:**');
+    expect(md).toContain('```typescript');
+    expect(md).toContain('greet("world")');
   });
 
-  it('excludes related symbols that have no docs', () => {
-    // AIClient is in related but not in the index
-    const index = makeIndex([generatorEntry, extractorEntry]);
-    const graph = generateDependencyGraph(generatorEntry, index);
+  it('renders throws', () => {
+    const node = makeNode({
+      id: 'src/test.ts:parse',
+      name: 'parse',
+      throws: ['SyntaxError if input is invalid'],
+    });
+    const graph = makeGraph([node]);
+    const md = renderNodeMarkdown(node, graph);
 
-    expect(graph).toContain('TypeScriptExtractor');
-    expect(graph).not.toContain('AIClient');
+    expect(md).toContain('**Throws:**');
+    expect(md).toContain('- SyntaxError if input is invalid');
   });
 
-  it('returns null when no related symbols have docs', () => {
-    const entry: SymbolEntry = {
-      name: 'Lonely',
-      docPath: 'lonely.md',
-      sourcePath: 'lonely.ts',
-      overview: '',
-      related: ['NonExistent'],
-    };
-    const index = makeIndex([entry]);
-    expect(generateDependencyGraph(entry, index)).toBeNull();
+  it('renders see-also', () => {
+    const node = makeNode({
+      id: 'src/test.ts:parse',
+      name: 'parse',
+      see: ['stringify'],
+    });
+    const graph = makeGraph([node]);
+    const md = renderNodeMarkdown(node, graph);
+
+    expect(md).toContain('**See also:**');
+    expect(md).toContain('- stringify');
   });
 
-  it('returns null when related list is empty', () => {
-    const index = makeIndex([extractorEntry]);
-    expect(generateDependencyGraph(extractorEntry, index)).toBeNull();
+  it('omits sections when data is absent', () => {
+    const node = makeNode({ id: 'src/test.ts:simple', name: 'simple' });
+    const graph = makeGraph([node]);
+    const md = renderNodeMarkdown(node, graph);
+
+    expect(md).toContain('# simple');
+    expect(md).not.toContain('**Parameters:**');
+    expect(md).not.toContain('**Returns:**');
+    expect(md).not.toContain('**Calls:**');
+    expect(md).not.toContain('**Called by:**');
+    expect(md).not.toContain('**Examples:**');
+    expect(md).not.toContain('**Throws:**');
+    expect(md).not.toContain('**See also:**');
   });
 
-  it('preserves hasJsDoc on SymbolEntry through graph generation', () => {
-    const entryWithJsDoc: SymbolEntry = {
-      name: 'Documented',
-      docPath: 'src/doc.md',
-      sourcePath: 'src/doc.ts',
-      overview: 'Has docs',
-      related: ['Helper'],
-      hasJsDoc: true,
-    };
-    const helperEntry: SymbolEntry = {
-      name: 'Helper',
-      docPath: 'src/helper.md',
-      sourcePath: 'src/helper.ts',
-      overview: 'A helper',
-      related: [],
-      hasJsDoc: false,
-    };
-    const index = makeIndex([entryWithJsDoc, helperEntry]);
-    const graph = generateDependencyGraph(entryWithJsDoc, index);
+  it('escapes pipe characters in parameter types', () => {
+    const node = makeNode({
+      id: 'src/test.ts:fn',
+      name: 'fn',
+      structuredParams: [
+        { name: 'value', type: 'string | number', isOptional: false, isRest: false },
+      ],
+    });
+    const graph = makeGraph([node]);
+    const md = renderNodeMarkdown(node, graph);
 
-    expect(graph).not.toBeNull();
-    expect(graph).toContain('Documented[Documented]:::current');
-    expect(graph).toContain('Helper[Helper]');
-    // Verify hasJsDoc is preserved on the entries in the index
-    expect(index.byName.get('Documented')?.[0].hasJsDoc).toBe(true);
-    expect(index.byName.get('Helper')?.[0].hasJsDoc).toBe(false);
-  });
-
-  it('uses clean URL paths in click directives', () => {
-    const index = makeIndex([generatorEntry, extractorEntry]);
-    const graph = generateDependencyGraph(generatorEntry, index);
-
-    // Doc paths are converted to clean URLs: src/extractor/.../file.md → /docs/src/extractor/.../file
-    expect(graph).toContain('/docs/src/extractor/typescript-extractor/type-script-extractor');
+    expect(md).toContain('`string \\| number`');
   });
 });

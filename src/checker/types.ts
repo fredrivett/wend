@@ -31,7 +31,7 @@ export interface DocMetadata {
 }
 
 export interface StaleDoc {
-  docPath: string;
+  nodeId: string;
   reason: string;
   staleDependencies: StaleDependency[];
 }

@@ -14,11 +14,7 @@ function makeScan(overrides: Partial<ProjectScan> = {}): ProjectScan {
   return {
     sourceFiles: [],
     allSymbols: [],
-    documentedSymbols: new Set<string>(),
     totalSymbols: 0,
-    documented: 0,
-    undocumented: 0,
-    coverage: 100,
     exportedSymbols: 0,
     withJsDoc: 0,
     ...overrides,

@@ -8,12 +8,11 @@ import { loadConfig } from '../utils/config.js';
 /**
  * Register the `syncdocs check` CLI command.
  *
- * Scans all generated docs for staleness by comparing source code hashes
- * against the hashes stored in doc frontmatter. Exits with code 1 if any
- * stale docs are found (useful for CI).
+ * Checks graph.json freshness by comparing stored hashes against current
+ * source code. Exits with code 1 if any stale nodes are found (useful for CI).
  */
 export function registerCheckCommand(cli: CAC) {
-  cli.command('check', 'Check if docs are stale').action(async () => {
+  cli.command('check', 'Check if graph is stale').action(async () => {
     p.intro('Check Documentation');
 
     try {
@@ -27,18 +26,18 @@ export function registerCheckCommand(cli: CAC) {
       const docsDir = resolve(process.cwd(), config.outputDir);
 
       if (!existsSync(docsDir)) {
-        p.cancel(`Docs directory not found: ${config.outputDir}`);
+        p.cancel(`Output directory not found: ${config.outputDir}`);
         process.exit(1);
       }
 
-      // Check for stale docs
+      // Check for stale nodes
       const spinner = p.spinner();
-      spinner.start('Scanning documentation files');
+      spinner.start('Checking graph freshness');
 
       const checker = new StaleChecker();
-      const result = checker.checkDocs(docsDir);
+      const result = checker.checkGraph(config.outputDir);
 
-      spinner.stop(`Scanned ${result.totalDocs} document${result.totalDocs === 1 ? '' : 's'}`);
+      spinner.stop(`Checked ${result.totalDocs} node${result.totalDocs === 1 ? '' : 's'}`);
 
       // Display errors if any
       if (result.errors.length > 0) {
@@ -48,15 +47,15 @@ export function registerCheckCommand(cli: CAC) {
 
       // Display results
       if (result.staleDocs.length === 0) {
-        p.log.success(`All ${result.totalDocs} documents are up to date!`);
+        p.log.success(`All ${result.totalDocs} nodes are up to date!`);
       } else {
         p.log.warn(
-          `Found ${result.staleDocs.length} stale document${result.staleDocs.length === 1 ? '' : 's'}:`,
+          `Found ${result.staleDocs.length} stale node${result.staleDocs.length === 1 ? '' : 's'}:`,
         );
 
         const lines: string[] = [];
         for (const staleDoc of result.staleDocs) {
-          lines.push(`  ${getRelativePath(staleDoc.docPath)}`);
+          lines.push(`  ${staleDoc.nodeId}`);
           for (const dep of staleDoc.staleDependencies) {
             const reason = formatStaleReason(dep.reason);
             lines.push(`   ${reason} ${dep.path}:${dep.symbol}`);
@@ -68,23 +67,21 @@ export function registerCheckCommand(cli: CAC) {
         }
         p.log.message(lines.join('\n'));
 
-        p.log.message('Run syncdocs sync to regenerate stale docs.');
+        p.log.message('Run syncdocs sync to update.');
       }
 
       p.outro(
         result.staleDocs.length === 0
-          ? 'Documentation is fresh!'
-          : `${result.staleDocs.length} stale doc${result.staleDocs.length === 1 ? '' : 's'} found`,
+          ? 'Graph is fresh!'
+          : `${result.staleDocs.length} stale node${result.staleDocs.length === 1 ? '' : 's'} found`,
       );
 
-      // Exit with error code if stale docs found
+      // Exit with error code if stale nodes found
       if (result.staleDocs.length > 0) {
         process.exit(1);
       }
     } catch (error) {
-      p.cancel(
-        `Failed to check documentation: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      p.cancel(`Failed to check graph: ${error instanceof Error ? error.message : String(error)}`);
       process.exit(1);
     }
   });
@@ -100,10 +97,4 @@ function formatStaleReason(reason: 'changed' | 'not-found' | 'file-not-found'): 
     case 'file-not-found':
       return 'file deleted';
   }
-}
-
-/** Convert an absolute path to a path relative to the current working directory. */
-function getRelativePath(absolutePath: string): string {
-  const cwd = process.cwd();
-  return absolutePath.startsWith(cwd) ? absolutePath.substring(cwd.length + 1) : absolutePath;
 }

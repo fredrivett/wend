@@ -2,9 +2,9 @@
 
 Docs that automatically sync with your code.
 
-syncdocs builds a call graph from your TypeScript/JavaScript codebase and generates documentation from static analysis. When code changes, docs get flagged as stale and can be regenerated with a single command.
+syncdocs builds a call graph from your TypeScript/JavaScript codebase using static analysis. When code changes, the graph gets flagged as stale and can be regenerated with a single command.
 
-Documentation lives in your repo (in `_syncdocs/` by default), tracks dependencies via content hashes, and includes an interactive flow graph viewer.
+The output is a `graph.json` file (in `_syncdocs/` by default) that tracks symbols, relationships, and content hashes, plus an interactive flow graph viewer.
 
 ## Quick Start
 
@@ -32,7 +32,7 @@ Initialize syncdocs in your project. Creates a `_syncdocs/config.yaml` with your
 
 ### `syncdocs sync [target]`
 
-Build a call graph and generate documentation. Analyzes all source files, extracts symbols and their relationships, writes `graph.json`, and generates a markdown doc for each symbol.
+Build the dependency graph. Analyzes all source files, extracts symbols and their relationships, and writes `graph.json`.
 
 ```bash
 syncdocs sync              # sync all files in scope
@@ -41,19 +41,19 @@ syncdocs sync src/api/     # sync only files under src/api/
 
 ### `syncdocs check`
 
-Check for stale documentation. Compares current code hashes against stored doc hashes and reports any that are out of sync. Returns exit code 1 if stale docs are found (CI-friendly).
+Check graph freshness. Compares current code hashes against the hashes stored in `graph.json` and reports any that are out of sync. Returns exit code 1 if stale nodes are found (CI-friendly).
 
 ```bash
-syncdocs check        # report stale docs
+syncdocs check        # report stale nodes
 ```
 
 ### `syncdocs status [--verbose]`
 
-Show documentation coverage for your project, including a suggestion for what to document next.
+Show JSDoc coverage for your project.
 
 ```bash
 syncdocs status            # coverage summary
-syncdocs status --verbose  # include full list of undocumented symbols
+syncdocs status --verbose  # include full list of symbols missing JSDoc
 ```
 
 ### `syncdocs serve [--port <number>]`
@@ -70,9 +70,8 @@ syncdocs serve --port 8080
 1. **Extract** - The TypeScript compiler API parses source files and extracts symbols (functions, classes, arrow functions)
 2. **Match** - Framework matchers identify entry points (Next.js routes, Inngest functions, Trigger.dev tasks)
 3. **Graph** - A call graph is built from static analysis, tracking direct calls, async dispatches, and other connections between symbols
-4. **Generate** - Static markdown documentation is generated for each node in the graph, including call relationships and entry point metadata
-5. **Hash** - Symbol content is SHA256 hashed so changes can be detected
-6. **Check** - Compare stored hashes against current code to detect when docs are out of sync
+4. **Hash** - Symbol content is SHA256 hashed so changes can be detected
+5. **Check** - Compare stored hashes against current code to detect when the graph is out of sync
 
 ## Configuration
 
