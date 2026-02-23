@@ -98,11 +98,18 @@ export function registerStatusCommand(cli: CAC) {
         // Show symbols missing JSDoc
         renderMissingJsDocList(scan, options.verbose ?? false);
 
-        p.outro(
-          scan.coverage === 100
-            ? '✨ Perfect coverage!'
-            : `${scan.coverage}% documented - keep going! 💪`,
-        );
+        const jsDocCoverage =
+          scan.totalSymbols > 0 ? Math.round((scan.withJsDoc / scan.totalSymbols) * 100) : 0;
+
+        if (scan.coverage === 100 && jsDocCoverage === 100) {
+          p.outro('\u2728 Perfect coverage!');
+        } else if (scan.coverage === 100) {
+          p.outro(
+            `\u2728 Fully documented! ${jsDocCoverage}% JSDoc coverage \u2014 run \x1b[1;36msyncdocs jsdoc\x1b[0m for next steps`,
+          );
+        } else {
+          p.outro(`${scan.coverage}% documented - keep going! \uD83D\uDCAA`);
+        }
       } catch (error) {
         p.cancel(
           `Failed to generate status: ${error instanceof Error ? error.message : String(error)}`,
