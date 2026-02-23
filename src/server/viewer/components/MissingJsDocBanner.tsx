@@ -1,3 +1,12 @@
+/** Subtle info card shown for trivial symbols where JSDoc isn't required. */
+export function TrivialSymbolInfo() {
+  return (
+    <div className="rounded border border-blue-100 bg-blue-50/50 px-4 py-2.5 text-sm text-blue-700 my-3">
+      JSDoc not required — this is a trivial symbol with no logic.
+    </div>
+  );
+}
+
 /** Banner shown when a symbol is missing its JSDoc comment, with a collapsible agent prompt. */
 export function MissingJsDocBanner() {
   return (

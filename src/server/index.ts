@@ -19,6 +19,7 @@ export interface SymbolEntry {
   exported?: boolean;
   isAsync?: boolean;
   hasJsDoc?: boolean;
+  isTrivial?: boolean;
   deprecated?: string | boolean;
   lineRange?: string;
   entryType?: string;
@@ -71,6 +72,7 @@ function buildSymbolIndex(outputDir: string): SymbolIndex {
         exported: metadata.exported,
         isAsync: metadata.isAsync,
         hasJsDoc: metadata.hasJsDoc,
+        isTrivial: metadata.isTrivial,
         deprecated: metadata.deprecated,
         lineRange: metadata.lineRange,
         entryType: metadata.entryType,
@@ -199,7 +201,13 @@ function buildIndexResponse(index: SymbolIndex) {
   // Group entries by source directory
   const tree: Record<
     string,
-    { name: string; docPath: string; overview: string; hasJsDoc?: boolean }[]
+    {
+      name: string;
+      docPath: string;
+      overview: string;
+      hasJsDoc?: boolean;
+      isTrivial?: boolean;
+    }[]
   > = {};
 
   for (const [, entry] of index.entries) {
@@ -210,6 +218,7 @@ function buildIndexResponse(index: SymbolIndex) {
       docPath: entry.docPath,
       overview: entry.overview,
       hasJsDoc: entry.hasJsDoc,
+      isTrivial: entry.isTrivial,
     });
   }
 
@@ -260,6 +269,7 @@ function buildDocResponse(docPath: string, index: SymbolIndex, outputDir: string
       exported: entry.exported,
       isAsync: entry.isAsync,
       hasJsDoc: entry.hasJsDoc,
+      isTrivial: entry.isTrivial,
       deprecated: entry.deprecated,
       lineRange: entry.lineRange,
       entryType: entry.entryType,

@@ -71,6 +71,7 @@ export class StaticDocGenerator {
     if (node.isExported) lines.push('exported: true');
     if (node.isAsync) lines.push('async: true');
     if (node.hasJsDoc !== undefined) lines.push(`hasJsDoc: ${node.hasJsDoc}`);
+    if (node.isTrivial) lines.push('isTrivial: true');
     if (node.deprecated) {
       const depValue = typeof node.deprecated === 'string' ? node.deprecated : 'true';
       lines.push(`deprecated: ${depValue}`);

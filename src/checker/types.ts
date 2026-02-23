@@ -19,6 +19,7 @@ export interface DocMetadata {
   exported?: boolean;
   isAsync?: boolean;
   hasJsDoc?: boolean;
+  isTrivial?: boolean;
   deprecated?: string | boolean;
   filePath?: string;
   lineRange?: string;

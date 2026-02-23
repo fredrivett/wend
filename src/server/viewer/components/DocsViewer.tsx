@@ -2,7 +2,7 @@ import { marked } from 'marked';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { docPathToUrl, escapeHtml, urlToDocPath } from '../docs-utils';
-import { MissingJsDocBanner } from './MissingJsDocBanner';
+import { MissingJsDocBanner, TrivialSymbolInfo } from './MissingJsDocBanner';
 import { Badge, type BadgeVariant, variantLabels } from './ui/badge';
 
 interface DocData {
@@ -17,6 +17,7 @@ interface DocData {
   exported?: boolean;
   isAsync?: boolean;
   hasJsDoc?: boolean;
+  isTrivial?: boolean;
   deprecated?: string | boolean;
   lineRange?: string;
   entryType?: string;
@@ -286,7 +287,9 @@ export function DocsViewer() {
             {typeof doc.deprecated === 'string' && `: ${doc.deprecated}`}
           </div>
         )}
-        {doc.hasJsDoc === false && doc.exported && <MissingJsDocBanner />}
+        {doc.hasJsDoc === false &&
+          doc.exported &&
+          (doc.isTrivial ? <TrivialSymbolInfo /> : <MissingJsDocBanner />)}
         <div className="doc-meta">
           {metaParts.map((part) => (
             <span key={part}>{part}</span>

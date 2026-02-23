@@ -10,6 +10,7 @@ import { relative } from 'node:path';
 import { TypeScriptExtractor } from '../extractor/index.js';
 import { resolveImportPath } from '../extractor/resolve-import.js';
 import type { CallSite, ImportInfo, SymbolInfo } from '../extractor/types.js';
+import { isTrivialBody } from '../cli/utils/next-suggestion.js';
 import { ContentHasher } from '../hasher/index.js';
 import { matchers } from '../matchers/index.js';
 import type { RuntimeConnection } from '../matchers/types.js';
@@ -107,6 +108,7 @@ export class GraphBuilder {
           ...(entryType && { entryType }),
           ...(metadata && Object.keys(metadata).length > 0 && { metadata }),
           hasJsDoc: symbol.jsDoc !== undefined,
+          ...(isTrivialBody(symbol.body) && { isTrivial: true }),
           ...(symbol.jsDoc?.description && { description: symbol.jsDoc.description }),
           ...(symbol.structuredParams &&
             symbol.structuredParams.length > 0 && { structuredParams: symbol.structuredParams }),

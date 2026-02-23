@@ -23,6 +23,7 @@ export interface GraphNode {
   throws?: string[];
   see?: string[];
   hasJsDoc?: boolean;
+  isTrivial?: boolean;
 }
 
 export type EntryType =

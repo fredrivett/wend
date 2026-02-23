@@ -5,12 +5,12 @@ import { docPathToUrl, urlToDocPath } from '../docs-utils';
 
 export type DocsIndex = Record<
   string,
-  Array<{ name: string; docPath: string; overview: string; hasJsDoc?: boolean }>
+  Array<{ name: string; docPath: string; overview: string; hasJsDoc?: boolean; isTrivial?: boolean }>
 >;
 
 export interface TreeNode {
   children: Record<string, TreeNode>;
-  symbols: Array<{ name: string; docPath: string; overview: string; hasJsDoc?: boolean }>;
+  symbols: Array<{ name: string; docPath: string; overview: string; hasJsDoc?: boolean; isTrivial?: boolean }>;
 }
 
 export function buildTree(index: DocsIndex, filter: string): TreeNode {
@@ -81,7 +81,7 @@ function TreeDir({
   const sortedDirs = Object.keys(node.children).sort();
   const allItems: Array<
     | { type: 'dir'; name: string }
-    | { type: 'sym'; sym: { name: string; docPath: string; overview: string; hasJsDoc?: boolean } }
+    | { type: 'sym'; sym: { name: string; docPath: string; overview: string; hasJsDoc?: boolean; isTrivial?: boolean } }
   > = [];
   for (const d of sortedDirs) {
     allItems.push({ type: 'dir', name: d });
@@ -129,7 +129,7 @@ function TreeDir({
               >
                 <Guides guides={childGuides} isLast={itemIsLast} />
                 <span className="item-name">{item.sym.name}</span>
-                {item.sym.hasJsDoc === false && (
+                {item.sym.hasJsDoc === false && !item.sym.isTrivial && (
                   <span
                     className="ml-auto text-[10px] text-amber-500 opacity-70"
                     title="Missing JSDoc comment"
