@@ -194,7 +194,7 @@ export function registerJsDocCommand(cli: CAC) {
         p.outro(
           jsDocCoverage === 100
             ? '\u2728 Full JSDoc coverage!'
-            : `${jsDocCoverage}% JSDoc coverage \u2014 run \x1b[1;36msyncdocs jsdoc --prompt\x1b[0m to generate an agent prompt`,
+            : `${jsDocCoverage}% JSDoc coverage \u2014 fix with:\n  \x1b[1;36msyncdocs jsdoc --run claude\x1b[0m  Hand off to Claude Code\n  \x1b[1;36msyncdocs jsdoc --run codex\x1b[0m   Hand off to Codex\n  \x1b[1;36msyncdocs jsdoc --prompt\x1b[0m      Print agent prompt to stdout`,
         );
       } catch (error) {
         p.cancel(
