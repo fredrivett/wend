@@ -1,3 +1,4 @@
+import { execFileSync, spawn } from 'node:child_process';
 import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
 import { loadConfig } from '../utils/config.js';
@@ -10,7 +11,22 @@ import {
 interface JsDocOptions {
   verbose?: boolean;
   prompt?: boolean;
+  run?: string;
 }
+
+/** Map of supported agent names to their CLI commands and argument patterns. */
+const AGENTS: Record<string, { cmd: string; args: (prompt: string) => string[]; url: string }> = {
+  claude: {
+    cmd: 'claude',
+    args: (prompt) => [prompt],
+    url: 'https://docs.anthropic.com/en/docs/claude-code',
+  },
+  codex: {
+    cmd: 'codex',
+    args: (prompt) => ['exec', '--full-auto', prompt],
+    url: 'https://github.com/openai/codex',
+  },
+};
 
 /** Agent prompt for auto-populating JSDoc comments to 100% coverage. */
 export const JSDOC_AGENT_PROMPT = `Your task is to add JSDoc comments to TypeScript source files until the project reaches 100% JSDoc coverage.
@@ -96,15 +112,55 @@ export async function callVisionAPI(
  *
  * With `--prompt`: prints a ready-to-use agent prompt to stdout for piping
  * into coding agents like Claude Code, Codex, or Cursor.
+ *
+ * With `--run <agent>`: spawns the named agent CLI with the prompt directly.
+ * Supported agents: claude, codex.
  */
 export function registerJsDocCommand(cli: CAC) {
   cli
     .command('jsdoc', 'Show JSDoc coverage or print an agent prompt')
     .option('--verbose', 'Show all symbols missing JSDoc')
     .option('--prompt', 'Print agent prompt to stdout for piping to coding agents')
+    .option('--run <agent>', 'Run an agent to auto-populate JSDoc (e.g. claude)')
     .example('syncdocs jsdoc')
     .example('syncdocs jsdoc --prompt | pbcopy')
+    .example('syncdocs jsdoc --run claude')
     .action(async (options: JsDocOptions) => {
+      if (options.run) {
+        const agentName = options.run.toLowerCase();
+        const agent = AGENTS[agentName];
+        if (!agent) {
+          p.log.error(
+            `Unknown agent: ${agentName}. Supported agents: ${Object.keys(AGENTS).join(', ')}`,
+          );
+          process.exit(1);
+        }
+
+        try {
+          execFileSync('which', [agent.cmd], { stdio: 'ignore' });
+        } catch {
+          p.log.error(`${agent.cmd} not found. Install it first: ${agent.url}`);
+          process.exit(1);
+        }
+
+        p.log.info(
+          `Running \x1b[1;36m${agent.cmd}\x1b[0m with JSDoc agent prompt\u2026 (Ctrl+C to cancel)`,
+        );
+
+        const child = spawn(agent.cmd, agent.args(JSDOC_AGENT_PROMPT), {
+          stdio: 'inherit',
+          cwd: process.cwd(),
+        });
+
+        const code = await new Promise<number>((resolve) => {
+          child.on('close', (exitCode) => resolve(exitCode ?? 0));
+          child.on('error', () => resolve(1));
+        });
+
+        process.exit(code);
+        return;
+      }
+
       if (options.prompt) {
         // biome-ignore lint/suspicious/noConsole: intentional raw stdout for pipe-friendly --prompt mode
         console.log(JSDOC_AGENT_PROMPT);
