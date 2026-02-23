@@ -56,29 +56,22 @@ describe('StaticDocGenerator', () => {
   });
 
   describe('Description rendering', () => {
-    it('should render description after kind/location line', () => {
+    it('should render description after title', () => {
       const node = makeNode({ description: 'Adds two numbers together.' });
       const content = generateAndRead(node);
       expect(content).toContain('Adds two numbers together.');
-      // Description should come after the kind+location line
-      const kindLine = '`function` in `src/test.ts:1-10`';
-      const kindIndex = content.indexOf(kindLine);
+      const titleIndex = content.indexOf('# testFunc');
       const descIndex = content.indexOf('Adds two numbers together.');
-      expect(descIndex).toBeGreaterThan(kindIndex);
+      expect(descIndex).toBeGreaterThan(titleIndex);
     });
 
     it('should not render description section when undefined', () => {
       const node = makeNode();
       const content = generateAndRead(node);
-      // Content between kind/location and end should not contain a freestanding paragraph
-      // (description would be a plain text line after the kind line)
-      const kindLine = '`function` in `src/test.ts:1-10`';
-      const afterKind = content.split(kindLine)[1];
-      // There should be no plain-text paragraph after the kind line
-      // (only markdown formatting like **Calls:**, *async*, etc. or empty lines)
-      const nonEmptyLines = afterKind.split('\n').filter((l) => l.trim() !== '');
+      // Content after the title should not contain a freestanding paragraph
+      const afterTitle = content.split('# testFunc')[1];
+      const nonEmptyLines = afterTitle.split('\n').filter((l) => l.trim() !== '');
       for (const line of nonEmptyLines) {
-        // Every non-empty line should be markdown formatting, not a plain description
         const isMarkdown =
           line.startsWith('*') ||
           line.startsWith('|') ||
@@ -92,43 +85,43 @@ describe('StaticDocGenerator', () => {
     });
   });
 
-  describe('Export badge rendering', () => {
-    it('should render exported badge when isExported is true', () => {
+  describe('Export frontmatter', () => {
+    it('should include exported: true in frontmatter when isExported is true', () => {
       const node = makeNode({ isExported: true });
       const content = generateAndRead(node);
-      expect(content).toContain('`exported`');
+      expect(content).toMatch(/^---[\s\S]*exported: true[\s\S]*---/);
     });
 
-    it('should not render exported badge when isExported is false', () => {
+    it('should not include exported in frontmatter when isExported is false', () => {
       const node = makeNode({ isExported: false });
       const content = generateAndRead(node);
-      expect(content).not.toContain('`exported`');
+      expect(content).not.toMatch(/^---[\s\S]*exported:[\s\S]*---/);
     });
 
-    it('should not render exported badge when isExported is undefined', () => {
+    it('should not include exported in frontmatter when isExported is undefined', () => {
       const node = makeNode();
       const content = generateAndRead(node);
-      expect(content).not.toContain('`exported`');
+      expect(content).not.toMatch(/^---[\s\S]*exported:[\s\S]*---/);
     });
   });
 
-  describe('Deprecated notice rendering', () => {
-    it('should render deprecated notice without reason', () => {
+  describe('Deprecated frontmatter', () => {
+    it('should include deprecated: true in frontmatter when deprecated is true', () => {
       const node = makeNode({ deprecated: true });
       const content = generateAndRead(node);
-      expect(content).toContain('> **Deprecated**');
+      expect(content).toMatch(/^---[\s\S]*deprecated: true[\s\S]*---/);
     });
 
-    it('should render deprecated notice with reason', () => {
+    it('should include deprecated reason in frontmatter when deprecated is a string', () => {
       const node = makeNode({ deprecated: 'Use newFunc instead' });
       const content = generateAndRead(node);
-      expect(content).toContain('> **Deprecated**: Use newFunc instead');
+      expect(content).toMatch(/^---[\s\S]*deprecated: Use newFunc instead[\s\S]*---/);
     });
 
-    it('should not render deprecated notice when not set', () => {
+    it('should not include deprecated in frontmatter when not set', () => {
       const node = makeNode();
       const content = generateAndRead(node);
-      expect(content).not.toContain('Deprecated');
+      expect(content).not.toMatch(/^---[\s\S]*deprecated:[\s\S]*---/);
     });
   });
 
@@ -272,17 +265,51 @@ describe('StaticDocGenerator', () => {
     });
   });
 
+  describe('Entry point metadata in frontmatter', () => {
+    it('should include entryType and httpMethod in frontmatter', () => {
+      const node = makeNode({
+        entryType: 'api-route',
+        metadata: { httpMethod: 'POST', route: '/api/users' },
+      });
+      const content = generateAndRead(node);
+      expect(content).toMatch(/^---[\s\S]*entryType: api-route[\s\S]*---/);
+      expect(content).toMatch(/^---[\s\S]*httpMethod: POST[\s\S]*---/);
+      expect(content).toMatch(/^---[\s\S]*route: \/api\/users[\s\S]*---/);
+    });
+
+    it('should include eventTrigger and taskId in frontmatter', () => {
+      const node = makeNode({
+        entryType: 'trigger-task',
+        metadata: { eventTrigger: 'user.created', taskId: 'process-user' },
+      });
+      const content = generateAndRead(node);
+      expect(content).toMatch(/^---[\s\S]*entryType: trigger-task[\s\S]*---/);
+      expect(content).toMatch(/^---[\s\S]*eventTrigger: user.created[\s\S]*---/);
+      expect(content).toMatch(/^---[\s\S]*taskId: process-user[\s\S]*---/);
+    });
+
+    it('should omit entry point fields when not set', () => {
+      const node = makeNode();
+      const content = generateAndRead(node);
+      expect(content).not.toMatch(/^---[\s\S]*entryType:[\s\S]*---/);
+      expect(content).not.toMatch(/^---[\s\S]*httpMethod:[\s\S]*---/);
+      expect(content).not.toMatch(/^---[\s\S]*route:[\s\S]*---/);
+      expect(content).not.toMatch(/^---[\s\S]*eventTrigger:[\s\S]*---/);
+      expect(content).not.toMatch(/^---[\s\S]*taskId:[\s\S]*---/);
+    });
+  });
+
   describe('Backward compatibility', () => {
     it('should produce valid output with no new fields', () => {
       const node = makeNode();
       const content = generateAndRead(node);
-      // Should have frontmatter, title, kind+location
-      expect(content).toContain('---');
+      // Should have frontmatter with kind, title
+      expect(content).toMatch(/^---[\s\S]*kind: function[\s\S]*---/);
       expect(content).toContain('# testFunc');
-      expect(content).toContain('`function` in `src/test.ts:1-10`');
-      // Should NOT have any new sections
-      expect(content).not.toContain('`exported`');
-      expect(content).not.toContain('**Deprecated**');
+      // Should NOT have optional frontmatter fields
+      expect(content).not.toMatch(/^---[\s\S]*exported:[\s\S]*---/);
+      expect(content).not.toMatch(/^---[\s\S]*deprecated:[\s\S]*---/);
+      // Should NOT have body sections
       expect(content).not.toContain('**Parameters:**');
       expect(content).not.toContain('**Returns:**');
       expect(content).not.toContain('**Examples:**');
@@ -292,7 +319,7 @@ describe('StaticDocGenerator', () => {
   });
 
   describe('Section ordering', () => {
-    it('should render all sections in correct order', () => {
+    it('should render all body sections in correct order', () => {
       const node = makeNode({
         isExported: true,
         deprecated: 'Use v2',
@@ -322,27 +349,27 @@ describe('StaticDocGenerator', () => {
       generator.generateForNode(node, graph);
       const content = readFileSync(join(TEST_DIR, 'src/test/testFunc.md'), 'utf-8');
 
-      // Verify ordering by finding indices
-      const exportedIdx = content.indexOf('`exported`');
-      const deprecatedIdx = content.indexOf('> **Deprecated**');
-      const kindIdx = content.indexOf('`function` in');
+      // Badge metadata should be in frontmatter, not body
+      expect(content).toMatch(/^---[\s\S]*kind: function[\s\S]*---/);
+      expect(content).toMatch(/^---[\s\S]*exported: true[\s\S]*---/);
+      expect(content).toMatch(/^---[\s\S]*async: true[\s\S]*---/);
+      expect(content).toMatch(/^---[\s\S]*deprecated: Use v2[\s\S]*---/);
+
+      // Verify body section ordering by finding indices
+      const titleIdx = content.indexOf('# testFunc');
       const descIdx = content.indexOf('A test function.');
       const paramsIdx = content.indexOf('**Parameters:**');
       const returnsIdx = content.indexOf('**Returns:**');
       const callsIdx = content.indexOf('**Calls:**');
-      const asyncIdx = content.indexOf('*This symbol is async.*');
       const examplesIdx = content.indexOf('**Examples:**');
       const throwsIdx = content.indexOf('**Throws:**');
       const seeIdx = content.indexOf('**See also:**');
 
-      expect(exportedIdx).toBeLessThan(deprecatedIdx);
-      expect(deprecatedIdx).toBeLessThan(kindIdx);
-      expect(kindIdx).toBeLessThan(descIdx);
+      expect(titleIdx).toBeLessThan(descIdx);
       expect(descIdx).toBeLessThan(paramsIdx);
       expect(paramsIdx).toBeLessThan(returnsIdx);
       expect(returnsIdx).toBeLessThan(callsIdx);
-      expect(callsIdx).toBeLessThan(asyncIdx);
-      expect(asyncIdx).toBeLessThan(examplesIdx);
+      expect(callsIdx).toBeLessThan(examplesIdx);
       expect(examplesIdx).toBeLessThan(throwsIdx);
       expect(throwsIdx).toBeLessThan(seeIdx);
     });

@@ -41,6 +41,17 @@ export class DocParser {
     let title = '';
     let syncdocsVersion: string | undefined;
     let generated = '';
+    let kind: string | undefined;
+    let exported: boolean | undefined;
+    let isAsync: boolean | undefined;
+    let deprecated: string | boolean | undefined;
+    let filePath: string | undefined;
+    let lineRange: string | undefined;
+    let entryType: string | undefined;
+    let httpMethod: string | undefined;
+    let route: string | undefined;
+    let eventTrigger: string | undefined;
+    let taskId: string | undefined;
     const dependencies: DocDependency[] = [];
     let inDependencies = false;
     let currentDep: Partial<DocDependency> | null = null;
@@ -54,6 +65,29 @@ export class DocParser {
         syncdocsVersion = trimmed.substring(16).trim();
       } else if (trimmed.startsWith('generated:')) {
         generated = trimmed.substring(10).trim();
+      } else if (trimmed.startsWith('kind:')) {
+        kind = trimmed.substring(5).trim();
+      } else if (trimmed.startsWith('exported:')) {
+        exported = trimmed.substring(9).trim() === 'true';
+      } else if (trimmed.startsWith('async:')) {
+        isAsync = trimmed.substring(6).trim() === 'true';
+      } else if (trimmed.startsWith('deprecated:')) {
+        const val = trimmed.substring(11).trim();
+        deprecated = val === 'true' ? true : val;
+      } else if (trimmed.startsWith('filePath:')) {
+        filePath = trimmed.substring(9).trim();
+      } else if (trimmed.startsWith('lineRange:')) {
+        lineRange = trimmed.substring(10).trim();
+      } else if (trimmed.startsWith('entryType:')) {
+        entryType = trimmed.substring(10).trim();
+      } else if (trimmed.startsWith('httpMethod:')) {
+        httpMethod = trimmed.substring(11).trim();
+      } else if (trimmed.startsWith('route:')) {
+        route = trimmed.substring(6).trim();
+      } else if (trimmed.startsWith('eventTrigger:')) {
+        eventTrigger = trimmed.substring(13).trim();
+      } else if (trimmed.startsWith('taskId:')) {
+        taskId = trimmed.substring(7).trim();
       } else if (trimmed.startsWith('dependencies:')) {
         inDependencies = true;
       } else if (inDependencies) {
@@ -84,6 +118,22 @@ export class DocParser {
       dependencies.push(currentDep as DocDependency);
     }
 
-    return { title, syncdocsVersion, generated, dependencies };
+    return {
+      title,
+      syncdocsVersion,
+      generated,
+      dependencies,
+      kind,
+      exported,
+      isAsync,
+      deprecated,
+      filePath,
+      lineRange,
+      entryType,
+      httpMethod,
+      route,
+      eventTrigger,
+      taskId,
+    };
   }
 }

@@ -67,6 +67,20 @@ export class StaticDocGenerator {
     // Frontmatter
     lines.push('---');
     lines.push(`title: ${node.name}`);
+    lines.push(`kind: ${node.kind}`);
+    if (node.isExported) lines.push('exported: true');
+    if (node.isAsync) lines.push('async: true');
+    if (node.deprecated) {
+      const depValue = typeof node.deprecated === 'string' ? node.deprecated : 'true';
+      lines.push(`deprecated: ${depValue}`);
+    }
+    lines.push(`filePath: ${node.filePath}`);
+    lines.push(`lineRange: ${node.lineRange[0]}-${node.lineRange[1]}`);
+    if (node.entryType) lines.push(`entryType: ${node.entryType}`);
+    if (node.metadata?.httpMethod) lines.push(`httpMethod: ${node.metadata.httpMethod}`);
+    if (node.metadata?.route) lines.push(`route: ${node.metadata.route}`);
+    if (node.metadata?.eventTrigger) lines.push(`eventTrigger: ${node.metadata.eventTrigger}`);
+    if (node.metadata?.taskId) lines.push(`taskId: ${node.metadata.taskId}`);
     lines.push(`generated: ${new Date().toISOString()}`);
     lines.push(`graphNode: ${node.id}`);
     lines.push('dependencies:');
@@ -80,33 +94,9 @@ export class StaticDocGenerator {
     lines.push(`# ${node.name}`);
     lines.push('');
 
-    // Export badge
-    if (node.isExported) {
-      lines.push('`exported`');
-      lines.push('');
-    }
-
-    // Deprecated notice
-    if (node.deprecated) {
-      const reason = typeof node.deprecated === 'string' ? `: ${node.deprecated}` : '';
-      lines.push(`> **Deprecated**${reason}`);
-      lines.push('');
-    }
-
-    // Kind + location
-    const lineRange = `${node.lineRange[0]}-${node.lineRange[1]}`;
-    lines.push(`\`${node.kind}\` in \`${node.filePath}:${lineRange}\``);
-    lines.push('');
-
     // Description
     if (node.description) {
       lines.push(node.description);
-      lines.push('');
-    }
-
-    // Entry point info
-    if (node.entryType) {
-      lines.push(this.renderEntryPointInfo(node));
       lines.push('');
     }
 
@@ -151,12 +141,6 @@ export class StaticDocGenerator {
       lines.push('');
     }
 
-    // Async indicator
-    if (node.isAsync) {
-      lines.push('*This symbol is async.*');
-      lines.push('');
-    }
-
     // Examples
     if (node.examples && node.examples.length > 0) {
       lines.push('**Examples:**');
@@ -190,33 +174,6 @@ export class StaticDocGenerator {
     }
 
     return lines.join('\n');
-  }
-
-  /**
-   * Render entry point metadata (API route, event trigger, etc.)
-   */
-  private renderEntryPointInfo(node: GraphNode): string {
-    const parts: string[] = [];
-    parts.push(`**Entry point:** \`${node.entryType}\``);
-
-    if (node.metadata) {
-      if (node.metadata.httpMethod) {
-        parts.push(
-          `**HTTP:** \`${node.metadata.httpMethod}${node.metadata.route ? ` ${node.metadata.route}` : ''}\``,
-        );
-      }
-      if (node.metadata.eventTrigger) {
-        parts.push(`**Event:** \`${node.metadata.eventTrigger}\``);
-      }
-      if (node.metadata.taskId) {
-        parts.push(`**Task:** \`${node.metadata.taskId}\``);
-      }
-      if (node.metadata.route && !node.metadata.httpMethod) {
-        parts.push(`**Route:** \`${node.metadata.route}\``);
-      }
-    }
-
-    return parts.join('  \n');
   }
 
   /**

@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
-import { Badge, type BadgeVariant } from './ui/badge';
+import { Badge, type BadgeVariant, variantLabels } from './ui/badge';
 
 interface NodeData {
   label: string;
@@ -74,15 +74,6 @@ const entryTypeBadgeVariant: Record<string, BadgeVariant> = {
   'server-action': 'server-action',
 };
 
-const entryTypeLabels: Record<string, string> = {
-  'api-route': 'API',
-  page: 'Page',
-  'inngest-function': 'Job',
-  'trigger-task': 'Job',
-  middleware: 'Middleware',
-  'server-action': 'Action',
-};
-
 const entryTypeImpl: Record<string, { label: string; variant: BadgeVariant }> = {
   'inngest-function': { label: 'Inngest', variant: 'inngest' },
   'trigger-task': { label: 'Trigger', variant: 'trigger' },
@@ -99,7 +90,7 @@ function EntryPointNode({ data }: NodeProps) {
   const d = data as unknown as NodeData;
   const config = d.entryType ? entryTypeConfig[d.entryType] || defaultConfig : defaultConfig;
   const badgeVariant = d.entryType ? entryTypeBadgeVariant[d.entryType] || 'default' : 'default';
-  const typeLabel = d.entryType ? entryTypeLabels[d.entryType] || d.entryType : '';
+  const typeLabel = d.entryType ? variantLabels[badgeVariant] || d.entryType : '';
   const impl = d.entryType ? entryTypeImpl[d.entryType] : undefined;
   const httpMethod = d.metadata?.httpMethod;
   const route = d.metadata?.route;

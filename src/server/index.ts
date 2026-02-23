@@ -14,6 +14,17 @@ export interface SymbolEntry {
   related: string[]; // symbol names extracted from Related section
   syncdocsVersion?: string;
   generated?: string;
+  // Badge / symbol metadata from frontmatter
+  kind?: string;
+  exported?: boolean;
+  isAsync?: boolean;
+  deprecated?: string | boolean;
+  lineRange?: string;
+  entryType?: string;
+  httpMethod?: string;
+  route?: string;
+  eventTrigger?: string;
+  taskId?: string;
 }
 
 export interface SymbolIndex {
@@ -55,6 +66,16 @@ function buildSymbolIndex(outputDir: string): SymbolIndex {
         related,
         syncdocsVersion: metadata.syncdocsVersion,
         generated: metadata.generated,
+        kind: metadata.kind,
+        exported: metadata.exported,
+        isAsync: metadata.isAsync,
+        deprecated: metadata.deprecated,
+        lineRange: metadata.lineRange,
+        entryType: metadata.entryType,
+        httpMethod: metadata.httpMethod,
+        route: metadata.route,
+        eventTrigger: metadata.eventTrigger,
+        taskId: metadata.taskId,
       };
 
       entries.set(docPath, entry);
@@ -229,6 +250,16 @@ function buildDocResponse(docPath: string, index: SymbolIndex, outputDir: string
       sourcePath: entry.sourcePath,
       syncdocsVersion: entry.syncdocsVersion,
       generated: entry.generated,
+      kind: entry.kind,
+      exported: entry.exported,
+      isAsync: entry.isAsync,
+      deprecated: entry.deprecated,
+      lineRange: entry.lineRange,
+      entryType: entry.entryType,
+      httpMethod: entry.httpMethod,
+      route: entry.route,
+      eventTrigger: entry.eventTrigger,
+      taskId: entry.taskId,
       markdown,
       dependencyGraph,
       related: entry.related

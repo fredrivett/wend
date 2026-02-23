@@ -22,6 +22,10 @@ type BadgeVariant =
   | 'async'
   | 'default';
 
+/** Base Tailwind classes shared by all badge variants. */
+const BASE_CLASSES = 'text-[10px] font-semibold px-1.5 py-0.5 rounded';
+
+/** Variant-specific Tailwind classes for each badge type. */
 const variantClasses: Record<BadgeVariant, string> = {
   // Solid entry point badges
   'api-route': 'bg-blue-500 text-white uppercase tracking-wide font-bold',
@@ -45,17 +49,35 @@ const variantClasses: Record<BadgeVariant, string> = {
   default: 'bg-gray-100 text-gray-600',
 };
 
+/** Default display labels for each badge variant. */
+const variantLabels: Record<BadgeVariant, string> = {
+  'api-route': 'API',
+  page: 'Page',
+  job: 'Job',
+  'server-action': 'Action',
+  middleware: 'Middleware',
+  get: 'GET',
+  post: 'POST',
+  put: 'PUT',
+  patch: 'PATCH',
+  delete: 'DELETE',
+  inngest: 'Inngest',
+  trigger: 'Trigger',
+  component: 'Component',
+  hook: 'Hook',
+  async: 'async',
+  default: '',
+};
+
 interface BadgeProps {
   variant: BadgeVariant;
   children: React.ReactNode;
 }
 
+/** Renders a styled badge span as a React component. */
 export function Badge({ variant, children }: BadgeProps) {
-  return (
-    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${variantClasses[variant]}`}>
-      {children}
-    </span>
-  );
+  return <span className={`${BASE_CLASSES} ${variantClasses[variant]}`}>{children}</span>;
 }
 
+export { variantLabels };
 export type { BadgeVariant };

@@ -14,6 +14,18 @@ export interface DocMetadata {
   syncdocsVersion?: string;
   generated: string;
   dependencies: DocDependency[];
+  // Badge / symbol metadata
+  kind?: string;
+  exported?: boolean;
+  isAsync?: boolean;
+  deprecated?: string | boolean;
+  filePath?: string;
+  lineRange?: string;
+  entryType?: string;
+  httpMethod?: string;
+  route?: string;
+  eventTrigger?: string;
+  taskId?: string;
 }
 
 export interface StaleDoc {

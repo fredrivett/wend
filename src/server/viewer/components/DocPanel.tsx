@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { GraphNode } from '../../../graph/types.js';
 import { DocContent } from './DocContent';
-import { Badge, type BadgeVariant } from './ui/badge';
 import {
   SheetOrDrawer,
   SheetOrDrawerBody,
@@ -19,6 +18,16 @@ interface DocResponse {
   sourcePath: string;
   markdown: string;
   generated?: string;
+  kind?: string;
+  exported?: boolean;
+  isAsync?: boolean;
+  deprecated?: string | boolean;
+  lineRange?: string;
+  entryType?: string;
+  httpMethod?: string;
+  route?: string;
+  eventTrigger?: string;
+  taskId?: string;
 }
 
 interface DocPanelProps {
@@ -81,19 +90,6 @@ export function DocPanel({ node, onClose }: DocPanelProps) {
         <SheetOrDrawerHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {node && (
-                <Badge
-                  variant={
-                    node.kind === 'component'
-                      ? 'component'
-                      : node.kind === 'function' && /^use[A-Z]/.test(node.name)
-                        ? ('hook' as BadgeVariant)
-                        : 'default'
-                  }
-                >
-                  {node.kind === 'function' && /^use[A-Z]/.test(node.name) ? 'hook' : node.kind}
-                </Badge>
-              )}
               <SheetOrDrawerTitle>{node?.name ?? ''}</SheetOrDrawerTitle>
             </div>
             <div className="flex items-center gap-1">
@@ -166,6 +162,16 @@ export function DocPanel({ node, onClose }: DocPanelProps) {
               name={doc.name}
               sourcePath={doc.sourcePath}
               generated={doc.generated}
+              kind={doc.kind}
+              exported={doc.exported}
+              isAsync={doc.isAsync}
+              deprecated={doc.deprecated}
+              lineRange={doc.lineRange}
+              entryType={doc.entryType}
+              httpMethod={doc.httpMethod}
+              route={doc.route}
+              eventTrigger={doc.eventTrigger}
+              taskId={doc.taskId}
             />
           )}
         </SheetOrDrawerBody>

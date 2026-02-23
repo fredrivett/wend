@@ -146,6 +146,95 @@ Content
 
     expect(metadata.dependencies[0].asOf).toBeUndefined();
   });
+
+  it('should parse badge metadata from frontmatter', () => {
+    const content = `---
+title: DashboardDropzone
+kind: component
+exported: true
+async: true
+deprecated: Use FileUploadZone instead
+filePath: src/dashboard-dropzone.tsx
+lineRange: 19-118
+entryType: api-route
+httpMethod: GET
+route: /api/dashboard/upload
+eventTrigger: upload.completed
+taskId: process-upload
+generated: 2026-02-21T15:55:00.000Z
+dependencies:
+  - path: src/dashboard-dropzone.tsx
+    symbol: DashboardDropzone
+    hash: abc123
+---
+
+# DashboardDropzone
+`;
+
+    writeFileSync(join(TEST_DIR, 'badges.md'), content);
+    const metadata = parser.parseDocFile(join(TEST_DIR, 'badges.md'));
+
+    expect(metadata.kind).toBe('component');
+    expect(metadata.exported).toBe(true);
+    expect(metadata.isAsync).toBe(true);
+    expect(metadata.deprecated).toBe('Use FileUploadZone instead');
+    expect(metadata.filePath).toBe('src/dashboard-dropzone.tsx');
+    expect(metadata.lineRange).toBe('19-118');
+    expect(metadata.entryType).toBe('api-route');
+    expect(metadata.httpMethod).toBe('GET');
+    expect(metadata.route).toBe('/api/dashboard/upload');
+    expect(metadata.eventTrigger).toBe('upload.completed');
+    expect(metadata.taskId).toBe('process-upload');
+  });
+
+  it('should parse deprecated: true as boolean', () => {
+    const content = `---
+title: OldFunc
+deprecated: true
+generated: 2026-02-03T10:00:00Z
+dependencies:
+  - path: src/old.ts
+    symbol: OldFunc
+    hash: abc
+---
+
+Content
+`;
+
+    writeFileSync(join(TEST_DIR, 'dep-bool.md'), content);
+    const metadata = parser.parseDocFile(join(TEST_DIR, 'dep-bool.md'));
+
+    expect(metadata.deprecated).toBe(true);
+  });
+
+  it('should leave badge fields undefined when absent', () => {
+    const content = `---
+title: SimpleFunc
+generated: 2026-02-03T10:00:00Z
+dependencies:
+  - path: src/simple.ts
+    symbol: SimpleFunc
+    hash: abc
+---
+
+Content
+`;
+
+    writeFileSync(join(TEST_DIR, 'no-badges.md'), content);
+    const metadata = parser.parseDocFile(join(TEST_DIR, 'no-badges.md'));
+
+    expect(metadata.kind).toBeUndefined();
+    expect(metadata.exported).toBeUndefined();
+    expect(metadata.isAsync).toBeUndefined();
+    expect(metadata.deprecated).toBeUndefined();
+    expect(metadata.filePath).toBeUndefined();
+    expect(metadata.lineRange).toBeUndefined();
+    expect(metadata.entryType).toBeUndefined();
+    expect(metadata.httpMethod).toBeUndefined();
+    expect(metadata.route).toBeUndefined();
+    expect(metadata.eventTrigger).toBeUndefined();
+    expect(metadata.taskId).toBeUndefined();
+  });
 });
 
 describe('StaleChecker', () => {

@@ -2,6 +2,7 @@ import { marked } from 'marked';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { docPathToUrl, escapeHtml, urlToDocPath } from '../docs-utils';
+import { Badge, type BadgeVariant, variantLabels } from './ui/badge';
 
 interface DocData {
   name: string;
@@ -11,6 +12,16 @@ interface DocData {
   generated?: string;
   dependencyGraph?: string;
   related?: Array<{ name: string; docPath: string | null }>;
+  kind?: string;
+  exported?: boolean;
+  isAsync?: boolean;
+  deprecated?: string | boolean;
+  lineRange?: string;
+  entryType?: string;
+  httpMethod?: string;
+  route?: string;
+  eventTrigger?: string;
+  taskId?: string;
 }
 
 async function renderMermaidDiagrams(container: HTMLElement) {
@@ -177,18 +188,60 @@ export function DocsViewer() {
 
   if (!doc) return null;
 
-  // Build the HTML content
+  // Build the HTML content (markdown body + dependency graph)
   const renderedMarkdown = marked.parse(doc.markdown, { async: false }) as string;
 
-  let html = '';
-  html += `<h1>${escapeHtml(doc.name)}</h1>`;
-  if (doc.sourcePath) {
-    html += `<div class="source-path">${escapeHtml(doc.sourcePath)}</div>`;
+  let bodyHtml = '';
+  if (doc.dependencyGraph) {
+    bodyHtml += '<div class="dep-graph">';
+    bodyHtml += '<h3>Dependencies</h3>';
+    bodyHtml += `<div class="mermaid">${escapeHtml(doc.dependencyGraph)}</div>`;
+    bodyHtml += '</div>';
   }
+  bodyHtml += `<div id="doc-content">${renderedMarkdown}</div>`;
+
+  // Build badges from structured metadata
+  const badges: Array<{ variant: BadgeVariant; label: string }> = [];
+  if (doc.entryType) {
+    const entryMap: Record<string, BadgeVariant> = {
+      'api-route': 'api-route',
+      page: 'page',
+      'inngest-function': 'job',
+      'trigger-task': 'job',
+      middleware: 'middleware',
+      'server-action': 'server-action',
+    };
+    const variant = entryMap[doc.entryType] ?? 'default';
+    badges.push({ variant, label: variantLabels[variant] || doc.entryType });
+  }
+  if (doc.httpMethod) {
+    const methodMap: Record<string, BadgeVariant> = {
+      GET: 'get',
+      POST: 'post',
+      PUT: 'put',
+      PATCH: 'patch',
+      DELETE: 'delete',
+    };
+    badges.push({ variant: methodMap[doc.httpMethod] ?? 'default', label: doc.httpMethod });
+  }
+  if (doc.kind) {
+    const kindVariant: BadgeVariant =
+      doc.kind === 'component'
+        ? 'component'
+        : doc.kind === 'function' && /^use[A-Z]/.test(doc.name)
+          ? 'hook'
+          : 'default';
+    badges.push({
+      variant: kindVariant,
+      label: kindVariant === 'default' ? doc.kind : variantLabels[kindVariant],
+    });
+  }
+  if (doc.exported) badges.push({ variant: 'default', label: 'exported' });
+  if (doc.isAsync) badges.push({ variant: 'async', label: 'async' });
 
   const metaParts: string[] = [];
   metaParts.push(
-    `<span>syncdocs v${doc.syncdocsVersion ? escapeHtml(doc.syncdocsVersion) : ': unknown'}</span>`,
+    `syncdocs v${doc.syncdocsVersion ? escapeHtml(doc.syncdocsVersion) : ': unknown'}`,
   );
   if (doc.generated) {
     const date = new Date(doc.generated);
@@ -197,18 +250,8 @@ export function DocsViewer() {
       month: 'short',
       day: 'numeric',
     })} ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
-    metaParts.push(`<span>Generated ${formatted}</span>`);
+    metaParts.push(`Generated ${formatted}`);
   }
-  html += `<div class="doc-meta">${metaParts.join('')}</div>`;
-
-  if (doc.dependencyGraph) {
-    html += '<div class="dep-graph">';
-    html += '<h3>Dependencies</h3>';
-    html += `<div class="mermaid">${escapeHtml(doc.dependencyGraph)}</div>`;
-    html += '</div>';
-  }
-
-  html += `<div id="doc-content">${renderedMarkdown}</div>`;
 
   return (
     <div ref={mainRef} className="doc-viewer h-full overflow-y-auto">
@@ -217,10 +260,40 @@ export function DocsViewer() {
       <div
         ref={containerRef}
         className="doc-view px-12 py-8 max-w-[900px]"
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: rendered from markdown via marked
-        dangerouslySetInnerHTML={{ __html: html }}
         onClick={handleContentClick}
-      />
+      >
+        <h1>{doc.name}</h1>
+        {doc.sourcePath && (
+          <div className="source-path">
+            {doc.sourcePath}
+            {doc.lineRange && `:${doc.lineRange}`}
+          </div>
+        )}
+        {badges.length > 0 && (
+          <div className="flex flex-wrap gap-1 my-3">
+            {badges.map((b) => (
+              <Badge key={b.label} variant={b.variant}>
+                {b.label}
+              </Badge>
+            ))}
+          </div>
+        )}
+        {doc.deprecated && (
+          <div className="rounded border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800 my-3">
+            <strong>Deprecated</strong>
+            {typeof doc.deprecated === 'string' && `: ${doc.deprecated}`}
+          </div>
+        )}
+        <div className="doc-meta">
+          {metaParts.map((part) => (
+            <span key={part}>{part}</span>
+          ))}
+        </div>
+        <div
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: rendered from markdown via marked
+          dangerouslySetInnerHTML={{ __html: bodyHtml }}
+        />
+      </div>
     </div>
   );
 }
