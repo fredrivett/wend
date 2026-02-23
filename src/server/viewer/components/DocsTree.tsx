@@ -5,12 +5,24 @@ import { docPathToUrl, urlToDocPath } from '../docs-utils';
 
 export type DocsIndex = Record<
   string,
-  Array<{ name: string; docPath: string; overview: string; hasJsDoc?: boolean; isTrivial?: boolean }>
+  Array<{
+    name: string;
+    docPath: string;
+    overview: string;
+    hasJsDoc?: boolean;
+    isTrivial?: boolean;
+  }>
 >;
 
 export interface TreeNode {
   children: Record<string, TreeNode>;
-  symbols: Array<{ name: string; docPath: string; overview: string; hasJsDoc?: boolean; isTrivial?: boolean }>;
+  symbols: Array<{
+    name: string;
+    docPath: string;
+    overview: string;
+    hasJsDoc?: boolean;
+    isTrivial?: boolean;
+  }>;
 }
 
 export function buildTree(index: DocsIndex, filter: string): TreeNode {
@@ -81,7 +93,16 @@ function TreeDir({
   const sortedDirs = Object.keys(node.children).sort();
   const allItems: Array<
     | { type: 'dir'; name: string }
-    | { type: 'sym'; sym: { name: string; docPath: string; overview: string; hasJsDoc?: boolean; isTrivial?: boolean } }
+    | {
+        type: 'sym';
+        sym: {
+          name: string;
+          docPath: string;
+          overview: string;
+          hasJsDoc?: boolean;
+          isTrivial?: boolean;
+        };
+      }
   > = [];
   for (const d of sortedDirs) {
     allItems.push({ type: 'dir', name: d });

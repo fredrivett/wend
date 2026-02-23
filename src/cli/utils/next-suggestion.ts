@@ -446,11 +446,11 @@ export function getRelativePath(absolutePath: string): string {
  */
 function gitTrackedFilesSync(rootDir: string): string[] | null {
   try {
-    const stdout = execFileSync(
-      'git',
-      ['ls-files', '--cached', '--others', '--exclude-standard'],
-      { cwd: rootDir, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 },
-    );
+    const stdout = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
+      cwd: rootDir,
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024,
+    });
     return stdout.split('\n').filter(Boolean);
   } catch {
     return null;
