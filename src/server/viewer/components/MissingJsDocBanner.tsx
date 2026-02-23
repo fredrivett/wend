@@ -23,7 +23,7 @@ const JSDOC_AGENT_PROMPT = `Your task is to add JSDoc comments to TypeScript sou
 
 ## What "symbols" means
 
-Symbols are the TypeScript constructs that syncdocs tracks: functions, classes, interfaces, type aliases, enums, and exported constants. Every symbol must have a /** ... */ JSDoc comment directly above its declaration.
+Symbols are the TypeScript constructs that syncdocs tracks: functions, classes, interfaces, type aliases, enums, and constants. Only **exported** symbols require a /** ... */ JSDoc comment directly above their declaration. Non-exported (file-private) symbols do not need JSDoc.
 
 ## Feedback loop
 
@@ -40,7 +40,7 @@ Work file by file, not symbol by symbol:
 1. Run \`npx syncdocs jsdoc --verbose\` to get the list of symbols missing JSDoc, grouped by file.
 2. For each file in the list:
    a. Read the source file.
-   b. Add a JSDoc comment above every symbol that is missing one.
+   b. Add a JSDoc comment above every exported symbol that is missing one. Skip non-exported symbols.
    c. If a symbol's purpose is unclear from its name, signature, and body, read its generated doc in \`_syncdocs/\` for context on callers and callees.
    d. Do NOT change any code — only add JSDoc comments.
 3. After all files are done, run the project's formatter and linter (e.g. \`npm run format\`).

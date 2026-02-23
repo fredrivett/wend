@@ -286,7 +286,7 @@ export function DocsViewer() {
             {typeof doc.deprecated === 'string' && `: ${doc.deprecated}`}
           </div>
         )}
-        {doc.hasJsDoc === false && <MissingJsDocBanner />}
+        {doc.hasJsDoc === false && doc.exported && <MissingJsDocBanner />}
         <div className="doc-meta">
           {metaParts.map((part) => (
             <span key={part}>{part}</span>

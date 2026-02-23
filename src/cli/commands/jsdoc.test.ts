@@ -33,4 +33,9 @@ describe('JSDOC_AGENT_PROMPT', () => {
   it('does not mention @deprecated', () => {
     expect(JSDOC_AGENT_PROMPT).not.toContain('@deprecated');
   });
+
+  it('scopes JSDoc requirements to exported symbols only', () => {
+    expect(JSDOC_AGENT_PROMPT).toContain('Only **exported** symbols require');
+    expect(JSDOC_AGENT_PROMPT).toContain('Non-exported (file-private) symbols do not need JSDoc');
+  });
 });

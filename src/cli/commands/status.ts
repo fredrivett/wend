@@ -99,7 +99,7 @@ export function registerStatusCommand(cli: CAC) {
         renderMissingJsDocList(scan, options.verbose ?? false);
 
         const jsDocCoverage =
-          scan.totalSymbols > 0 ? Math.round((scan.withJsDoc / scan.totalSymbols) * 100) : 0;
+          scan.exportedSymbols > 0 ? Math.round((scan.withJsDoc / scan.exportedSymbols) * 100) : 0;
 
         if (scan.coverage === 100 && jsDocCoverage === 100) {
           p.outro('\u2728 Perfect coverage!');

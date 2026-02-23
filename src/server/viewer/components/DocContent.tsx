@@ -119,7 +119,7 @@ export function DocContent({
           {typeof deprecated === 'string' && `: ${deprecated}`}
         </div>
       )}
-      {hasJsDoc === false && <MissingJsDocBanner />}
+      {hasJsDoc === false && exported && <MissingJsDocBanner />}
       <div
         className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-600 prose-a:text-blue-600 prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:bg-gray-50 prose-pre:text-sm prose-td:text-sm prose-th:text-sm"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: rendered from markdown via marked
