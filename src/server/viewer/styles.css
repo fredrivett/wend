@@ -194,7 +194,7 @@ a.tree-item.active {
   margin-bottom: 12px;
 }
 
-.doc-view .dep-graph .mermaid svg {
+.doc-view .dep-graph .dep-graph-svg svg {
   max-width: 100%;
 }
 
@@ -316,11 +316,4 @@ a.tree-item.active {
 
 .related-link:hover {
   text-decoration: underline;
-}
-
-/* Mermaid current node styling */
-.current > rect {
-  fill: #dbeafe !important;
-  stroke: #3b82f6 !important;
-  stroke-width: 2px !important;
 }
