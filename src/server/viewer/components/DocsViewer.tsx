@@ -27,42 +27,6 @@ interface DocData {
   taskId?: string;
 }
 
-async function renderMermaidDiagrams(container: HTMLElement) {
-  const hasMermaid =
-    container.querySelector('.mermaid') || container.querySelector('pre code.language-mermaid');
-  if (!hasMermaid) return;
-
-  const mermaid = (await import('mermaid')).default;
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: 'default',
-    securityLevel: 'loose',
-    flowchart: { useMaxWidth: true, htmlLabels: true },
-  });
-
-  // Convert code blocks to mermaid divs
-  container.querySelectorAll('pre code.language-mermaid').forEach((codeEl) => {
-    const pre = codeEl.parentElement;
-    if (!pre) return;
-    const div = document.createElement('div');
-    div.className = 'mermaid';
-    div.textContent = codeEl.textContent;
-    pre.replaceWith(div);
-  });
-
-  const allMermaid = container.querySelectorAll('.mermaid');
-  for (let i = 0; i < allMermaid.length; i++) {
-    const el = allMermaid[i] as HTMLElement;
-    const id = `mermaid-${Date.now()}-${i}`;
-    try {
-      const { svg } = await mermaid.render(id, el.textContent?.trim() ?? '');
-      el.innerHTML = svg;
-    } catch {
-      // Mermaid render errors are expected for some diagram types
-    }
-  }
-}
-
 function makeRelatedLinksClickable(
   container: HTMLElement,
   related: DocData['related'],
@@ -128,12 +92,11 @@ export function DocsViewer() {
       });
   }, [docPath]);
 
-  // Render mermaid and related links after HTML is set
+  // Post-process rendered HTML (related links, auto-expand)
   useEffect(() => {
     if (!containerRef.current || !doc) return;
     const container = containerRef.current;
 
-    renderMermaidDiagrams(container);
     makeRelatedLinksClickable(container, doc.related, navigate);
 
     // Auto-expand the Visual Flow details section
@@ -198,7 +161,7 @@ export function DocsViewer() {
   if (doc.dependencyGraph) {
     bodyHtml += '<div class="dep-graph">';
     bodyHtml += '<h3>Dependencies</h3>';
-    bodyHtml += `<div class="mermaid">${escapeHtml(doc.dependencyGraph)}</div>`;
+    bodyHtml += `<div class="dep-graph-svg">${doc.dependencyGraph}</div>`;
     bodyHtml += '</div>';
   }
   bodyHtml += `<div id="doc-content">${renderedMarkdown}</div>`;

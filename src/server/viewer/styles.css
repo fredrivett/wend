@@ -194,8 +194,11 @@ a.tree-item.active {
   margin-bottom: 12px;
 }
 
-.doc-view .dep-graph .mermaid svg {
+.doc-view .dep-graph .dep-graph-svg svg {
   max-width: 100%;
+  --_text-sec: #475569;
+  --_group-hdr: color-mix(in srgb, var(--fg) 7%, var(--bg));
+  --_inner-stroke: color-mix(in srgb, var(--fg) 25%, var(--bg));
 }
 
 .doc-view #doc-content table {
@@ -316,11 +319,4 @@ a.tree-item.active {
 
 .related-link:hover {
   text-decoration: underline;
-}
-
-/* Mermaid current node styling */
-.current > rect {
-  fill: #dbeafe !important;
-  stroke: #3b82f6 !important;
-  stroke-width: 2px !important;
 }

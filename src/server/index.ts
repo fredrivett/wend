@@ -2,6 +2,7 @@ import { existsSync, readFileSync, watch } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { renderMermaidSVG } from 'beautiful-mermaid';
 import { getDocPath, renderNodeMarkdown } from '../graph/graph-renderer.js';
 import { GraphStore } from '../graph/graph-store.js';
 import { nodeToMermaid } from '../graph/graph-to-mermaid.js';
@@ -159,7 +160,16 @@ function buildDocResponse(docPath: string, index: SymbolIndex, graph: FlowGraph)
   if (!node) return null;
 
   const markdown = renderNodeMarkdown(node, graph);
-  const dependencyGraph = nodeToMermaid(graph, node.id) || null;
+  const mermaidSource = nodeToMermaid(graph, node.id);
+  let dependencyGraph: string | null = null;
+  if (mermaidSource) {
+    try {
+      dependencyGraph = renderMermaidSVG(mermaidSource, { bg: '#ffffff', fg: '#1e293b' });
+    } catch {
+      // Fall back to raw mermaid string if rendering fails
+      dependencyGraph = mermaidSource;
+    }
+  }
 
   return {
     name: entry.name,

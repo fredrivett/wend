@@ -107,7 +107,8 @@ function buildMermaid(
     const sourceId = sanitizeId(edge.source);
     const targetId = sanitizeId(edge.target);
     const arrow = edgeArrow(edge);
-    const label = edge.label ? `|"${sanitizeLabel(edge.label)}"|` : '';
+    const rawLabel = edge.label || edgeTypeLabel(edge);
+    const label = rawLabel ? `|"${sanitizeLabel(rawLabel)}"|` : '';
     lines.push(`  ${sourceId} ${arrow}${label} ${targetId}`);
   }
 
@@ -147,11 +148,18 @@ function formatNodeLabel(node: GraphNode): string {
 
 /** Return the mermaid arrow syntax for a given edge type. */
 function edgeArrow(edge: GraphEdge): string {
-  if (edge.type === 'error-handler') return '-. error .->';
+  if (edge.type === 'error-handler') return '-.->';
   if (edge.type === 'event-emit' || edge.type === 'async-dispatch') return '-.->';
-  if (edge.type === 'http-request') return '-- HTTP -->';
+  if (edge.type === 'http-request') return '-->';
   if (edge.type === 'conditional-call') return '-.->';
   return '-->';
+}
+
+/** Return a label derived from the edge type, if applicable. */
+function edgeTypeLabel(edge: GraphEdge): string | undefined {
+  if (edge.type === 'error-handler') return 'error';
+  if (edge.type === 'http-request') return 'HTTP';
+  return undefined;
 }
 
 /**
