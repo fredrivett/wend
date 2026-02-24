@@ -1,3 +1,4 @@
+import { ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { docPathToUrl, urlToDocPath } from '../docs-utils';
@@ -65,7 +66,6 @@ interface TreeDirProps {
   guides: boolean[];
   isLast: boolean;
   activeDocPath: string | null;
-  forceExpand: boolean;
   collapsedDirs: Set<string>;
   onToggleDir: (path: string) => void;
   dirPath: string;
@@ -78,7 +78,6 @@ function TreeDir({
   guides,
   isLast,
   activeDocPath,
-  forceExpand,
   collapsedDirs,
   onToggleDir,
   dirPath,
@@ -86,7 +85,7 @@ function TreeDir({
   const hasChildren = Object.keys(node.children).length > 0 || node.symbols.length > 0;
   if (!hasChildren) return null;
 
-  const isCollapsed = !forceExpand && collapsedDirs.has(dirPath);
+  const isCollapsed = collapsedDirs.has(dirPath);
   const childGuides = depth > 0 ? [...guides, !isLast] : [];
 
   const sortedDirs = Object.keys(node.children).sort();
@@ -133,7 +132,6 @@ function TreeDir({
                   guides={childGuides}
                   isLast={itemIsLast}
                   activeDocPath={activeDocPath}
-                  forceExpand={forceExpand}
                   collapsedDirs={collapsedDirs}
                   onToggleDir={onToggleDir}
                   dirPath={`${dirPath}/${item.name}`}
@@ -177,6 +175,13 @@ export function DocsTree({ visibleNames }: DocsTreeProps) {
   const location = useLocation();
 
   const activeDocPath = useMemo(() => urlToDocPath(location.pathname), [location.pathname]);
+
+  // Auto-expand all directories when the search filter changes
+  useEffect(() => {
+    if (visibleNames !== null) {
+      setCollapsedDirs(new Set());
+    }
+  }, [visibleNames]);
 
   useEffect(() => {
     fetch('/api/index')
@@ -234,15 +239,17 @@ export function DocsTree({ visibleNames }: DocsTreeProps) {
           <button
             type="button"
             onClick={collapseAll}
-            className="flex-1 px-2 py-1 text-[11px] font-medium text-gray-500 bg-white border border-gray-200 rounded cursor-pointer hover:bg-gray-50 hover:text-gray-700"
+            className="flex-1 px-2 py-1 text-[11px] font-medium text-gray-500 bg-white border border-gray-200 rounded cursor-pointer hover:bg-gray-50 hover:text-gray-700 flex items-center justify-center gap-1"
           >
+            <ChevronsDownUp size={12} />
             Collapse all
           </button>
           <button
             type="button"
             onClick={expandAll}
-            className="flex-1 px-2 py-1 text-[11px] font-medium text-gray-500 bg-white border border-gray-200 rounded cursor-pointer hover:bg-gray-50 hover:text-gray-700"
+            className="flex-1 px-2 py-1 text-[11px] font-medium text-gray-500 bg-white border border-gray-200 rounded cursor-pointer hover:bg-gray-50 hover:text-gray-700 flex items-center justify-center gap-1"
           >
+            <ChevronsUpDown size={12} />
             Expand all
           </button>
         </div>
@@ -260,7 +267,6 @@ export function DocsTree({ visibleNames }: DocsTreeProps) {
                 guides={[]}
                 isLast={false}
                 activeDocPath={activeDocPath}
-                forceExpand={visibleNames !== null}
                 collapsedDirs={collapsedDirs}
                 onToggleDir={onToggleDir}
                 dirPath={`/${name}`}
