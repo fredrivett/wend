@@ -196,6 +196,9 @@ a.tree-item.active {
 
 .doc-view .dep-graph .dep-graph-svg svg {
   max-width: 100%;
+  --_text-sec: #475569;
+  --_group-hdr: color-mix(in srgb, var(--fg) 7%, var(--bg));
+  --_inner-stroke: color-mix(in srgb, var(--fg) 25%, var(--bg));
 }
 
 .doc-view #doc-content table {
