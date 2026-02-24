@@ -65,7 +65,6 @@ interface TreeDirProps {
   guides: boolean[];
   isLast: boolean;
   activeDocPath: string | null;
-  forceExpand: boolean;
   collapsedDirs: Set<string>;
   onToggleDir: (path: string) => void;
   dirPath: string;
@@ -78,7 +77,6 @@ function TreeDir({
   guides,
   isLast,
   activeDocPath,
-  forceExpand,
   collapsedDirs,
   onToggleDir,
   dirPath,
@@ -86,7 +84,7 @@ function TreeDir({
   const hasChildren = Object.keys(node.children).length > 0 || node.symbols.length > 0;
   if (!hasChildren) return null;
 
-  const isCollapsed = !forceExpand && collapsedDirs.has(dirPath);
+  const isCollapsed = collapsedDirs.has(dirPath);
   const childGuides = depth > 0 ? [...guides, !isLast] : [];
 
   const sortedDirs = Object.keys(node.children).sort();
@@ -133,7 +131,6 @@ function TreeDir({
                   guides={childGuides}
                   isLast={itemIsLast}
                   activeDocPath={activeDocPath}
-                  forceExpand={forceExpand}
                   collapsedDirs={collapsedDirs}
                   onToggleDir={onToggleDir}
                   dirPath={`${dirPath}/${item.name}`}
@@ -177,6 +174,13 @@ export function DocsTree({ visibleNames }: DocsTreeProps) {
   const location = useLocation();
 
   const activeDocPath = useMemo(() => urlToDocPath(location.pathname), [location.pathname]);
+
+  // Auto-expand all directories when the search filter changes
+  useEffect(() => {
+    if (visibleNames !== null) {
+      setCollapsedDirs(new Set());
+    }
+  }, [visibleNames]);
 
   useEffect(() => {
     fetch('/api/index')
@@ -260,7 +264,6 @@ export function DocsTree({ visibleNames }: DocsTreeProps) {
                 guides={[]}
                 isLast={false}
                 activeDocPath={activeDocPath}
-                forceExpand={visibleNames !== null}
                 collapsedDirs={collapsedDirs}
                 onToggleDir={onToggleDir}
                 dirPath={`/${name}`}
