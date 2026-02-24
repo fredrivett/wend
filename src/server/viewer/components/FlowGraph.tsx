@@ -188,6 +188,7 @@ function FlowGraphInner({
   const nodesInitialized = useNodesInitialized();
   const visibleGraphRef = useRef<FlowGraphData | null>(null);
   const sizeCache = useRef<SizeCache>(new Map());
+  const [initialMeasureDone, setInitialMeasureDone] = useState(false);
 
   // Sync selection state to URL query params
   useEffect(() => {
@@ -309,8 +310,8 @@ function FlowGraphInner({
     return filtered;
   }, [graph, searchQuery, enabledTypes]);
 
-  // Filter to only visible nodes when focused
-  const visibleGraph = useMemo(() => {
+  // Filter to only focused subgraph
+  const focusFilteredGraph = useMemo(() => {
     if (!visibleIds) return filteredGraph;
     return {
       ...filteredGraph,
@@ -321,10 +322,13 @@ function FlowGraphInner({
     };
   }, [filteredGraph, visibleIds]);
 
-  // When visibleGraph changes: use cached sizes for instant layout, or fall back to two-pass measurement
+  // First render: measure ALL nodes (behind loading screen). After: render filtered view.
+  const renderGraph = initialMeasureDone ? focusFilteredGraph : graph;
+
+  // When renderGraph changes: use cached sizes for instant layout, or fall back to two-pass measurement
   useEffect(() => {
-    visibleGraphRef.current = visibleGraph;
-    const rfNodes = visibleGraph.nodes.map((n) => {
+    visibleGraphRef.current = renderGraph;
+    const rfNodes = renderGraph.nodes.map((n) => {
       const rfNode = toReactFlowNode(n);
       const isSelected = selectedEntries.has(n.id);
       rfNode.data = {
@@ -334,12 +338,12 @@ function FlowGraphInner({
       };
       return rfNode;
     });
-    setEdges(toReactFlowEdges(visibleGraph.edges, showConditionals));
+    setEdges(toReactFlowEdges(renderGraph.edges, showConditionals));
 
-    const allCached = visibleGraph.nodes.every((n) => sizeCache.current.has(n.id));
-    if (allCached && visibleGraph.nodes.length > 0) {
+    const allCached = renderGraph.nodes.every((n) => sizeCache.current.has(n.id));
+    if (allCached && renderGraph.nodes.length > 0) {
       // Fast path: compute positions before rendering so nodes never appear at origin
-      runElkLayout(rfNodes, visibleGraph.edges, layoutOptions, sizeCache.current).then(
+      runElkLayout(rfNodes, renderGraph.edges, layoutOptions, sizeCache.current).then(
         (positions) => applyPositionsAndFit(positions, rfNodes),
       );
     } else {
@@ -347,7 +351,7 @@ function FlowGraphInner({
       setNodes(rfNodes);
       setNeedsLayout(true);
     }
-  }, [visibleGraph, setNodes, setEdges, layoutOptions, applyPositionsAndFit, showConditionals]);
+  }, [renderGraph, setNodes, setEdges, layoutOptions, applyPositionsAndFit, showConditionals]);
 
   // Update node data (selected/dimmed) without triggering re-layout
   useEffect(() => {
@@ -377,6 +381,8 @@ function FlowGraphInner({
         });
       }
     }
+
+    if (!initialMeasureDone) setInitialMeasureDone(true);
 
     const currentGraph = visibleGraphRef.current;
     runElkLayout(nodes, currentGraph.edges, layoutOptions, sizeCache.current).then((positions) =>
@@ -440,7 +446,7 @@ function FlowGraphInner({
   return (
     <div className="w-full h-full relative">
       <LayoutSettings options={layoutOptions} onChange={setLayoutOptions} />
-      {selectedEntries.size > 0 && (
+      {(selectedEntries.size > 0 || focusedEntries.size > 0) && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur border border-gray-200 rounded-full px-3 py-1.5 shadow-sm text-xs text-gray-600">
           <span>
             {selectedEntries.size} selected

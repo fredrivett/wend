@@ -106,7 +106,12 @@ export function registerServeCommand(cli: CAC) {
 
         // Resolve --focus targets to node IDs and build URL
         let openUrl = url;
-        if (options.focus && graph) {
+        if (options.focus) {
+          if (!graph) {
+            p.cancel('No graph data available. Run: syncdocs sync');
+            process.exit(1);
+          }
+
           const { nodeIds, unresolved } = resolveFocusTargets(options.focus, graph);
 
           if (unresolved.length > 0) {
@@ -117,11 +122,14 @@ export function registerServeCommand(cli: CAC) {
             }
           }
 
-          if (nodeIds.length > 0) {
-            const encoded = nodeIds.map(encodeURIComponent).join(',');
-            openUrl = `${url}?selected=${encoded}&focused=${encoded}`;
-            p.log.info(`Focused on ${nodeIds.length} node${nodeIds.length > 1 ? 's' : ''}`);
+          if (nodeIds.length === 0) {
+            p.cancel('No focus targets could be resolved');
+            process.exit(1);
           }
+
+          const encoded = nodeIds.map(encodeURIComponent).join(',');
+          openUrl = `${url}?selected=${encoded}&focused=${encoded}`;
+          p.log.info(`Focused on ${nodeIds.length} node${nodeIds.length > 1 ? 's' : ''}`);
         }
 
         // Auto-open in browser (unless --no-open)
