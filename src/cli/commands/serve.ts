@@ -9,7 +9,7 @@ import { type SyncdocsConfig, loadConfig } from '../utils/config.js';
 interface ServeOptions {
   port?: number;
   open?: boolean;
-  focus?: string | string[];
+  focus?: string;
 }
 
 /**
@@ -18,20 +18,19 @@ interface ServeOptions {
  * Matches each target as an exact node ID first, then as a file path
  * (all symbols in that file). Unresolved targets are returned separately.
  *
- * @param targets - Focus targets (file:symbol or file), may contain comma-separated values
+ * @param targets - Comma-separated focus targets (file:symbol or file)
  * @param graph - The loaded flow graph
  * @returns Resolved node IDs and any unresolved target strings
  */
 function resolveFocusTargets(
-  targets: string | string[],
+  targets: string,
   graph: FlowGraph,
 ): { nodeIds: string[]; unresolved: string[] } {
   const nodeIdSet = new Set(graph.nodes.map((n) => n.id));
   const nodeIds: string[] = [];
   const unresolved: string[] = [];
 
-  const raw = Array.isArray(targets) ? targets : [targets];
-  const allTargets = raw.flatMap((t) => t.split(',')).map((t) => t.trim()).filter(Boolean);
+  const allTargets = targets.split(',').map((t) => t.trim()).filter(Boolean);
   for (const target of allTargets) {
     if (nodeIdSet.has(target)) {
       nodeIds.push(target);
@@ -84,10 +83,9 @@ export function registerServeCommand(cli: CAC) {
     .command('serve', 'Start interactive documentation viewer')
     .option('--port <number>', 'Port to run server on (default: 3456)')
     .option('--open', 'Auto-open browser (default: true)')
-    .option('--focus <target>', 'Focus on file:symbol or file (repeatable, comma-separated)')
+    .option('--focus <targets>', 'Focus on file:symbol or file (comma-separated)')
     .example('syncdocs serve')
     .example('syncdocs serve --port 8080')
-    .example('syncdocs serve --focus src/api/route.ts:GET --focus src/lib/db.ts:query')
     .example('syncdocs serve --focus src/api/route.ts:GET,src/lib/db.ts:query')
     .action(async (options: ServeOptions) => {
       p.intro('syncdocs viewer');
