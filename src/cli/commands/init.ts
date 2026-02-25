@@ -5,6 +5,8 @@ import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
 import { detectIncludePatterns } from '../utils/detect-sources.js';
 
+const FALLBACK_PLACEHOLDER = 'src/**/*.{ts,tsx,js,jsx}';
+
 interface InitConfig {
   output: {
     dir: string;
@@ -54,18 +56,55 @@ export function registerInitCommand(cli: CAC) {
       process.exit(0);
     }
 
-    const detectedIncludePatterns = detectIncludePatterns(process.cwd());
-    const includeInitialValue = detectedIncludePatterns.join(',');
+    const { patterns: detectedPatterns, detected } = detectIncludePatterns(process.cwd());
 
-    const includePattern = await p.text({
-      message: 'Which files should be documented?',
-      placeholder: includeInitialValue,
-      initialValue: includeInitialValue,
-    });
+    let includePatterns: string[];
 
-    if (p.isCancel(includePattern)) {
-      p.cancel('Setup cancelled');
-      process.exit(0);
+    if (detected) {
+      // Show checkboxes for detected patterns, all selected by default
+      const selected = await p.multiselect({
+        message: 'Which directories should be documented? (you can add custom patterns in the next step)',
+        options: detectedPatterns.map((pattern) => ({
+          value: pattern,
+          label: pattern,
+        })),
+        initialValues: detectedPatterns,
+      });
+
+      if (p.isCancel(selected)) {
+        p.cancel('Setup cancelled');
+        process.exit(0);
+      }
+
+      includePatterns = selected as string[];
+
+      // Offer a text input for additional custom patterns
+      const custom = await p.text({
+        message: 'Any additional patterns? (comma-separated, or press Enter to skip)',
+        placeholder: 'e.g. scripts/**/*.{ts,tsx,js,jsx}',
+      });
+
+      if (p.isCancel(custom)) {
+        p.cancel('Setup cancelled');
+        process.exit(0);
+      }
+
+      if (custom) {
+        includePatterns.push(...splitGlobPatterns(custom));
+      }
+    } else {
+      // Nothing detected — free-form text input with placeholder
+      const includePattern = await p.text({
+        message: 'Which files should be documented?',
+        placeholder: FALLBACK_PLACEHOLDER,
+      });
+
+      if (p.isCancel(includePattern)) {
+        p.cancel('Setup cancelled');
+        process.exit(0);
+      }
+
+      includePatterns = splitGlobPatterns(includePattern || FALLBACK_PLACEHOLDER);
     }
 
     const excludePattern = await p.text({
@@ -88,7 +127,7 @@ export function registerInitCommand(cli: CAC) {
         dir: outputDir as string,
       },
       scope: {
-        include: splitGlobPatterns(includePattern as string),
+        include: includePatterns,
         exclude: (excludePattern as string)
           .split(',')
           .map((p) => p.trim())

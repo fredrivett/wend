@@ -29,14 +29,20 @@ describe('detectIncludePatterns', () => {
     const projectDir = createTempProject();
     writeSourceFile(projectDir, 'src/index.ts');
 
-    expect(detectIncludePatterns(projectDir)).toEqual(['src/**/*.{ts,tsx,js,jsx}']);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['src/**/*.{ts,tsx,js,jsx}'],
+      detected: true,
+    });
   });
 
   it('returns app/src pattern when src does not exist', () => {
     const projectDir = createTempProject();
     writeSourceFile(projectDir, 'app/src/main.ts');
 
-    expect(detectIncludePatterns(projectDir)).toEqual(['app/src/**/*.{ts,tsx,js,jsx}']);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['app/src/**/*.{ts,tsx,js,jsx}'],
+      detected: true,
+    });
   });
 
   it('returns multiple matching patterns in priority order', () => {
@@ -44,17 +50,20 @@ describe('detectIncludePatterns', () => {
     writeSourceFile(projectDir, 'src/index.ts');
     writeSourceFile(projectDir, 'lib/utils.ts');
 
-    expect(detectIncludePatterns(projectDir)).toEqual([
-      'src/**/*.{ts,tsx,js,jsx}',
-      'lib/**/*.{ts,tsx,js,jsx}',
-    ]);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['src/**/*.{ts,tsx,js,jsx}', 'lib/**/*.{ts,tsx,js,jsx}'],
+      detected: true,
+    });
   });
 
   it('returns root-wide pattern when source files only exist at project root', () => {
     const projectDir = createTempProject();
     writeSourceFile(projectDir, 'index.js');
 
-    expect(detectIncludePatterns(projectDir)).toEqual(['**/*.{ts,tsx,js,jsx}']);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['**/*.{ts,tsx,js,jsx}'],
+      detected: true,
+    });
   });
 
   it('falls back to src pattern when no source files are detected', () => {
@@ -62,21 +71,30 @@ describe('detectIncludePatterns', () => {
     mkdirSync(join(projectDir, 'docs'), { recursive: true });
     writeFileSync(join(projectDir, 'docs/README.md'), '# docs\n', 'utf-8');
 
-    expect(detectIncludePatterns(projectDir)).toEqual(['src/**/*.{ts,tsx,js,jsx}']);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['src/**/*.{ts,tsx,js,jsx}'],
+      detected: false,
+    });
   });
 
   it('detects packages monorepo layout', () => {
     const projectDir = createTempProject();
     writeSourceFile(projectDir, 'packages/ui/src/Button.tsx');
 
-    expect(detectIncludePatterns(projectDir)).toEqual(['packages/**/*.{ts,tsx,js,jsx}']);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['packages/**/*.{ts,tsx,js,jsx}'],
+      detected: true,
+    });
   });
 
   it('detects app-router style app directory without src', () => {
     const projectDir = createTempProject();
     writeSourceFile(projectDir, 'app/page.tsx');
 
-    expect(detectIncludePatterns(projectDir)).toEqual(['app/**/*.{ts,tsx,js,jsx}']);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['app/**/*.{ts,tsx,js,jsx}'],
+      detected: true,
+    });
   });
 
   it('detects apps layout and keeps deterministic order when src also exists', () => {
@@ -84,10 +102,10 @@ describe('detectIncludePatterns', () => {
     writeSourceFile(projectDir, 'src/core.ts');
     writeSourceFile(projectDir, 'apps/web/src/main.tsx');
 
-    expect(detectIncludePatterns(projectDir)).toEqual([
-      'src/**/*.{ts,tsx,js,jsx}',
-      'apps/**/*.{ts,tsx,js,jsx}',
-    ]);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['src/**/*.{ts,tsx,js,jsx}', 'apps/**/*.{ts,tsx,js,jsx}'],
+      detected: true,
+    });
   });
 
   it('ignores build and vendor directories for detection', () => {
@@ -96,7 +114,10 @@ describe('detectIncludePatterns', () => {
     writeSourceFile(projectDir, 'node_modules/pkg/index.js');
     writeSourceFile(projectDir, '.next/server/app.js');
 
-    expect(detectIncludePatterns(projectDir)).toEqual(['src/**/*.{ts,tsx,js,jsx}']);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['src/**/*.{ts,tsx,js,jsx}'],
+      detected: false,
+    });
   });
 
   it('limits scanning depth to three levels below candidate directories', () => {
@@ -104,7 +125,10 @@ describe('detectIncludePatterns', () => {
     writeSourceFile(projectDir, 'src/a/b/c/d/too-deep.ts');
     writeSourceFile(projectDir, 'lib/index.ts');
 
-    expect(detectIncludePatterns(projectDir)).toEqual(['lib/**/*.{ts,tsx,js,jsx}']);
+    expect(detectIncludePatterns(projectDir)).toEqual({
+      patterns: ['lib/**/*.{ts,tsx,js,jsx}'],
+      detected: true,
+    });
   });
 
   describe('workspace detection', () => {
@@ -118,10 +142,10 @@ describe('detectIncludePatterns', () => {
       writeSourceFile(projectDir, 'backend/src/index.ts');
       writeSourceFile(projectDir, 'frontend/src/app.tsx');
 
-      expect(detectIncludePatterns(projectDir)).toEqual([
-        'backend/**/*.{ts,tsx,js,jsx}',
-        'frontend/**/*.{ts,tsx,js,jsx}',
-      ]);
+      expect(detectIncludePatterns(projectDir)).toEqual({
+        patterns: ['backend/**/*.{ts,tsx,js,jsx}', 'frontend/**/*.{ts,tsx,js,jsx}'],
+        detected: true,
+      });
     });
 
     it('detects npm/yarn workspaces from package.json', () => {
@@ -134,10 +158,10 @@ describe('detectIncludePatterns', () => {
       writeSourceFile(projectDir, 'api/src/server.ts');
       writeSourceFile(projectDir, 'web/src/main.tsx');
 
-      expect(detectIncludePatterns(projectDir)).toEqual([
-        'api/**/*.{ts,tsx,js,jsx}',
-        'web/**/*.{ts,tsx,js,jsx}',
-      ]);
+      expect(detectIncludePatterns(projectDir)).toEqual({
+        patterns: ['api/**/*.{ts,tsx,js,jsx}', 'web/**/*.{ts,tsx,js,jsx}'],
+        detected: true,
+      });
     });
 
     it('detects npm/yarn workspaces from package.json workspaces.packages', () => {
@@ -149,9 +173,10 @@ describe('detectIncludePatterns', () => {
       );
       writeSourceFile(projectDir, 'services/api/index.ts');
 
-      expect(detectIncludePatterns(projectDir)).toEqual([
-        'services/api/**/*.{ts,tsx,js,jsx}',
-      ]);
+      expect(detectIncludePatterns(projectDir)).toEqual({
+        patterns: ['services/api/**/*.{ts,tsx,js,jsx}'],
+        detected: true,
+      });
     });
 
     it('expands glob patterns in workspace config', () => {
@@ -165,9 +190,10 @@ describe('detectIncludePatterns', () => {
       writeSourceFile(projectDir, 'workshop/beta/src/index.ts');
 
       const result = detectIncludePatterns(projectDir);
-      expect(result).toContain('workshop/alpha/**/*.{ts,tsx,js,jsx}');
-      expect(result).toContain('workshop/beta/**/*.{ts,tsx,js,jsx}');
-      expect(result).toHaveLength(2);
+      expect(result.detected).toBe(true);
+      expect(result.patterns).toContain('workshop/alpha/**/*.{ts,tsx,js,jsx}');
+      expect(result.patterns).toContain('workshop/beta/**/*.{ts,tsx,js,jsx}');
+      expect(result.patterns).toHaveLength(2);
     });
 
     it('excludes workspace dirs that contain no source files', () => {
@@ -181,9 +207,10 @@ describe('detectIncludePatterns', () => {
       mkdirSync(join(projectDir, 'docs'), { recursive: true });
       writeFileSync(join(projectDir, 'docs/README.md'), '# docs\n', 'utf-8');
 
-      expect(detectIncludePatterns(projectDir)).toEqual([
-        'backend/**/*.{ts,tsx,js,jsx}',
-      ]);
+      expect(detectIncludePatterns(projectDir)).toEqual({
+        patterns: ['backend/**/*.{ts,tsx,js,jsx}'],
+        detected: true,
+      });
     });
 
     it('falls back to candidate detection when no workspace packages have source files', () => {
@@ -197,7 +224,10 @@ describe('detectIncludePatterns', () => {
       writeFileSync(join(projectDir, 'docs/README.md'), '# docs\n', 'utf-8');
       writeSourceFile(projectDir, 'src/index.ts');
 
-      expect(detectIncludePatterns(projectDir)).toEqual(['src/**/*.{ts,tsx,js,jsx}']);
+      expect(detectIncludePatterns(projectDir)).toEqual({
+        patterns: ['src/**/*.{ts,tsx,js,jsx}'],
+        detected: true,
+      });
     });
 
     it('prefers pnpm-workspace.yaml over package.json workspaces', () => {
@@ -215,9 +245,10 @@ describe('detectIncludePatterns', () => {
       writeSourceFile(projectDir, 'backend/src/index.ts');
       writeSourceFile(projectDir, 'different-pkg/src/index.ts');
 
-      expect(detectIncludePatterns(projectDir)).toEqual([
-        'backend/**/*.{ts,tsx,js,jsx}',
-      ]);
+      expect(detectIncludePatterns(projectDir)).toEqual({
+        patterns: ['backend/**/*.{ts,tsx,js,jsx}'],
+        detected: true,
+      });
     });
 
     it('handles quoted entries in pnpm-workspace.yaml', () => {
@@ -230,10 +261,10 @@ describe('detectIncludePatterns', () => {
       writeSourceFile(projectDir, 'frontend/app.tsx');
       writeSourceFile(projectDir, 'backend/server.ts');
 
-      expect(detectIncludePatterns(projectDir)).toEqual([
-        'frontend/**/*.{ts,tsx,js,jsx}',
-        'backend/**/*.{ts,tsx,js,jsx}',
-      ]);
+      expect(detectIncludePatterns(projectDir)).toEqual({
+        patterns: ['frontend/**/*.{ts,tsx,js,jsx}', 'backend/**/*.{ts,tsx,js,jsx}'],
+        detected: true,
+      });
     });
   });
 });

@@ -17,17 +17,25 @@ const IGNORED_DIRECTORIES = new Set([
   'node_modules',
 ]);
 
+/** Result of source-pattern detection. */
+export interface DetectResult {
+  /** Include glob patterns. */
+  patterns: string[];
+  /** Whether patterns were detected from the project layout (`true`) or are just a placeholder guess (`false`). */
+  detected: boolean;
+}
+
 /**
  * Detect likely source-code include patterns from common project layouts.
  *
  * Checks for workspace configs (pnpm-workspace.yaml, package.json workspaces)
  * first to handle monorepos, then falls back to scanning hardcoded candidate
- * directories. Returns the historical default when nothing is found.
+ * directories. Returns a fallback placeholder when nothing is found.
  */
-export function detectIncludePatterns(rootDir: string): string[] {
+export function detectIncludePatterns(rootDir: string): DetectResult {
   const workspacePatterns = detectWorkspacePatterns(rootDir);
   if (workspacePatterns) {
-    return workspacePatterns;
+    return { patterns: workspacePatterns, detected: true };
   }
 
   const matchedCandidates: string[] = [];
@@ -46,14 +54,14 @@ export function detectIncludePatterns(rootDir: string): string[] {
   }
 
   if (patterns.length > 0) {
-    return patterns;
+    return { patterns, detected: true };
   }
 
   if (hasRootLevelSourceFiles(rootDir)) {
-    return [SOURCE_GLOB_SUFFIX];
+    return { patterns: [SOURCE_GLOB_SUFFIX], detected: true };
   }
 
-  return [FALLBACK_PATTERN];
+  return { patterns: [FALLBACK_PATTERN], detected: false };
 }
 
 /**
