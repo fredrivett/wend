@@ -6,6 +6,13 @@ import type { CAC } from 'cac';
 import { detectIncludePatterns } from '../utils/detect-sources.js';
 
 const FALLBACK_PLACEHOLDER = 'src/**/*.{ts,tsx,js,jsx}';
+const DEFAULT_EXCLUDES = [
+  '**/*.test.ts',
+  '**/*.spec.ts',
+  'node_modules/**',
+  'dist/**',
+  'build/**',
+];
 
 interface InitConfig {
   output: {
@@ -107,15 +114,34 @@ export function registerInitCommand(cli: CAC) {
       includePatterns = splitGlobPatterns(includePattern || FALLBACK_PLACEHOLDER);
     }
 
-    const excludePattern = await p.text({
-      message: 'Which files should be excluded?',
-      placeholder: '**/*.test.ts,**/*.spec.ts,node_modules/**,dist/**,build/**',
-      initialValue: '**/*.test.ts,**/*.spec.ts,node_modules/**,dist/**,build/**',
+    const selectedExcludes = await p.multiselect({
+      message: 'Which patterns should be excluded? (you can add custom patterns in the next step)',
+      options: DEFAULT_EXCLUDES.map((pattern) => ({
+        value: pattern,
+        label: pattern,
+      })),
+      initialValues: DEFAULT_EXCLUDES,
     });
 
-    if (p.isCancel(excludePattern)) {
+    if (p.isCancel(selectedExcludes)) {
       p.cancel('Setup cancelled');
       process.exit(0);
+    }
+
+    let excludePatterns = selectedExcludes as string[];
+
+    const customExcludes = await p.text({
+      message: 'Any additional exclude patterns? (comma-separated, or press Enter to skip)',
+      placeholder: 'e.g. **/__snapshots__/**,*.generated.ts',
+    });
+
+    if (p.isCancel(customExcludes)) {
+      p.cancel('Setup cancelled');
+      process.exit(0);
+    }
+
+    if (customExcludes) {
+      excludePatterns.push(...splitGlobPatterns(customExcludes));
     }
 
     // Generate config
@@ -128,10 +154,7 @@ export function registerInitCommand(cli: CAC) {
       },
       scope: {
         include: includePatterns,
-        exclude: (excludePattern as string)
-          .split(',')
-          .map((p) => p.trim())
-          .filter(Boolean),
+        exclude: excludePatterns,
       },
     };
 
