@@ -1,4 +1,4 @@
-import { type Dirent, existsSync, readdirSync } from 'node:fs';
+import { type Dirent, existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const SOURCE_GLOB_SUFFIX = '**/*.{ts,tsx,js,jsx}';
@@ -20,10 +20,16 @@ const IGNORED_DIRECTORIES = new Set([
 /**
  * Detect likely source-code include patterns from common project layouts.
  *
- * Returns candidate patterns in priority order. Falls back to the historical
- * default when no likely source files are found.
+ * Checks for workspace configs (pnpm-workspace.yaml, package.json workspaces)
+ * first to handle monorepos, then falls back to scanning hardcoded candidate
+ * directories. Returns the historical default when nothing is found.
  */
 export function detectIncludePatterns(rootDir: string): string[] {
+  const workspacePatterns = detectWorkspacePatterns(rootDir);
+  if (workspacePatterns) {
+    return workspacePatterns;
+  }
+
   const matchedCandidates: string[] = [];
   const patterns: string[] = [];
 
@@ -48,6 +54,134 @@ export function detectIncludePatterns(rootDir: string): string[] {
   }
 
   return [FALLBACK_PATTERN];
+}
+
+/**
+ * Read workspace package directories from pnpm-workspace.yaml or package.json
+ * workspaces, resolve globs, and return include patterns for directories that
+ * contain source files. Returns `null` when no workspace config is found.
+ */
+function detectWorkspacePatterns(rootDir: string): string[] | null {
+  const workspaceDirs = readWorkspacePackages(rootDir);
+  if (!workspaceDirs) {
+    return null;
+  }
+
+  const resolved = resolveWorkspaceDirs(rootDir, workspaceDirs);
+  const patterns = resolved
+    .filter((dir) => containsSourceFiles(join(rootDir, dir), 3))
+    .map((dir) => `${dir}/${SOURCE_GLOB_SUFFIX}`);
+
+  return patterns.length > 0 ? patterns : null;
+}
+
+/**
+ * Read the raw workspace package entries from pnpm-workspace.yaml or
+ * package.json. Returns `null` if neither config exists.
+ */
+function readWorkspacePackages(rootDir: string): string[] | null {
+  // Try pnpm-workspace.yaml first
+  const pnpmPath = join(rootDir, 'pnpm-workspace.yaml');
+  if (existsSync(pnpmPath)) {
+    try {
+      const content = readFileSync(pnpmPath, 'utf-8');
+      return parsePnpmWorkspaceYaml(content);
+    } catch {
+      // Fall through
+    }
+  }
+
+  // Try package.json workspaces
+  const pkgPath = join(rootDir, 'package.json');
+  if (existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+      const workspaces = Array.isArray(pkg.workspaces)
+        ? pkg.workspaces
+        : Array.isArray(pkg.workspaces?.packages)
+          ? pkg.workspaces.packages
+          : null;
+      if (workspaces && workspaces.length > 0) {
+        return workspaces;
+      }
+    } catch {
+      // Fall through
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Parse the `packages` list from a pnpm-workspace.yaml string.
+ *
+ * Handles the simple YAML subset used by pnpm workspace configs — a
+ * `packages:` key followed by `- entry` list items.
+ */
+function parsePnpmWorkspaceYaml(content: string): string[] | null {
+  const lines = content.split('\n');
+  const entries: string[] = [];
+  let inPackages = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === 'packages:') {
+      inPackages = true;
+      continue;
+    }
+
+    if (inPackages) {
+      const match = trimmed.match(/^-\s+(.+)$/);
+      if (match) {
+        // Strip surrounding quotes if present
+        const entry = match[1].replace(/^['"]|['"]$/g, '');
+        entries.push(entry);
+      } else if (trimmed && !trimmed.startsWith('#')) {
+        // Non-empty, non-comment line that isn't a list item — section ended
+        break;
+      }
+    }
+  }
+
+  return entries.length > 0 ? entries : null;
+}
+
+/**
+ * Resolve workspace entries to concrete directory names.
+ *
+ * Plain entries (e.g. `backend`) are returned as-is if the directory exists.
+ * Glob entries ending with `/*` or `/**` are expanded by listing subdirectories
+ * of the parent path.
+ */
+function resolveWorkspaceDirs(rootDir: string, entries: string[]): string[] {
+  const dirs: string[] = [];
+
+  for (const entry of entries) {
+    // Handle glob patterns like "workshop/*" or "packages/**"
+    const globMatch = entry.match(/^(.+?)\/\*\*?$/);
+    if (globMatch) {
+      const parentDir = globMatch[1];
+      const parentPath = join(rootDir, parentDir);
+      try {
+        const children = readdirSync(parentPath, { withFileTypes: true });
+        for (const child of children) {
+          if (child.isDirectory() && !IGNORED_DIRECTORIES.has(child.name)) {
+            dirs.push(`${parentDir}/${child.name}`);
+          }
+        }
+      } catch {
+        // Parent directory doesn't exist, skip
+      }
+      continue;
+    }
+
+    // Plain directory entry
+    if (existsSync(join(rootDir, entry))) {
+      dirs.push(entry);
+    }
+  }
+
+  return dirs;
 }
 
 function containsSourceFiles(directoryPath: string, maxDepth: number): boolean {

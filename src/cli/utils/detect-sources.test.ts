@@ -106,4 +106,134 @@ describe('detectIncludePatterns', () => {
 
     expect(detectIncludePatterns(projectDir)).toEqual(['lib/**/*.{ts,tsx,js,jsx}']);
   });
+
+  describe('workspace detection', () => {
+    it('detects pnpm workspace packages from pnpm-workspace.yaml', () => {
+      const projectDir = createTempProject();
+      writeFileSync(
+        join(projectDir, 'pnpm-workspace.yaml'),
+        'packages:\n  - backend\n  - frontend\n',
+        'utf-8',
+      );
+      writeSourceFile(projectDir, 'backend/src/index.ts');
+      writeSourceFile(projectDir, 'frontend/src/app.tsx');
+
+      expect(detectIncludePatterns(projectDir)).toEqual([
+        'backend/**/*.{ts,tsx,js,jsx}',
+        'frontend/**/*.{ts,tsx,js,jsx}',
+      ]);
+    });
+
+    it('detects npm/yarn workspaces from package.json', () => {
+      const projectDir = createTempProject();
+      writeFileSync(
+        join(projectDir, 'package.json'),
+        JSON.stringify({ workspaces: ['api', 'web'] }),
+        'utf-8',
+      );
+      writeSourceFile(projectDir, 'api/src/server.ts');
+      writeSourceFile(projectDir, 'web/src/main.tsx');
+
+      expect(detectIncludePatterns(projectDir)).toEqual([
+        'api/**/*.{ts,tsx,js,jsx}',
+        'web/**/*.{ts,tsx,js,jsx}',
+      ]);
+    });
+
+    it('detects npm/yarn workspaces from package.json workspaces.packages', () => {
+      const projectDir = createTempProject();
+      writeFileSync(
+        join(projectDir, 'package.json'),
+        JSON.stringify({ workspaces: { packages: ['services/api'] } }),
+        'utf-8',
+      );
+      writeSourceFile(projectDir, 'services/api/index.ts');
+
+      expect(detectIncludePatterns(projectDir)).toEqual([
+        'services/api/**/*.{ts,tsx,js,jsx}',
+      ]);
+    });
+
+    it('expands glob patterns in workspace config', () => {
+      const projectDir = createTempProject();
+      writeFileSync(
+        join(projectDir, 'pnpm-workspace.yaml'),
+        'packages:\n  - workshop/*\n',
+        'utf-8',
+      );
+      writeSourceFile(projectDir, 'workshop/alpha/src/index.ts');
+      writeSourceFile(projectDir, 'workshop/beta/src/index.ts');
+
+      const result = detectIncludePatterns(projectDir);
+      expect(result).toContain('workshop/alpha/**/*.{ts,tsx,js,jsx}');
+      expect(result).toContain('workshop/beta/**/*.{ts,tsx,js,jsx}');
+      expect(result).toHaveLength(2);
+    });
+
+    it('excludes workspace dirs that contain no source files', () => {
+      const projectDir = createTempProject();
+      writeFileSync(
+        join(projectDir, 'pnpm-workspace.yaml'),
+        'packages:\n  - backend\n  - docs\n',
+        'utf-8',
+      );
+      writeSourceFile(projectDir, 'backend/src/index.ts');
+      mkdirSync(join(projectDir, 'docs'), { recursive: true });
+      writeFileSync(join(projectDir, 'docs/README.md'), '# docs\n', 'utf-8');
+
+      expect(detectIncludePatterns(projectDir)).toEqual([
+        'backend/**/*.{ts,tsx,js,jsx}',
+      ]);
+    });
+
+    it('falls back to candidate detection when no workspace packages have source files', () => {
+      const projectDir = createTempProject();
+      writeFileSync(
+        join(projectDir, 'pnpm-workspace.yaml'),
+        'packages:\n  - docs\n',
+        'utf-8',
+      );
+      mkdirSync(join(projectDir, 'docs'), { recursive: true });
+      writeFileSync(join(projectDir, 'docs/README.md'), '# docs\n', 'utf-8');
+      writeSourceFile(projectDir, 'src/index.ts');
+
+      expect(detectIncludePatterns(projectDir)).toEqual(['src/**/*.{ts,tsx,js,jsx}']);
+    });
+
+    it('prefers pnpm-workspace.yaml over package.json workspaces', () => {
+      const projectDir = createTempProject();
+      writeFileSync(
+        join(projectDir, 'pnpm-workspace.yaml'),
+        'packages:\n  - backend\n',
+        'utf-8',
+      );
+      writeFileSync(
+        join(projectDir, 'package.json'),
+        JSON.stringify({ workspaces: ['different-pkg'] }),
+        'utf-8',
+      );
+      writeSourceFile(projectDir, 'backend/src/index.ts');
+      writeSourceFile(projectDir, 'different-pkg/src/index.ts');
+
+      expect(detectIncludePatterns(projectDir)).toEqual([
+        'backend/**/*.{ts,tsx,js,jsx}',
+      ]);
+    });
+
+    it('handles quoted entries in pnpm-workspace.yaml', () => {
+      const projectDir = createTempProject();
+      writeFileSync(
+        join(projectDir, 'pnpm-workspace.yaml'),
+        "packages:\n  - 'frontend'\n  - \"backend\"\n",
+        'utf-8',
+      );
+      writeSourceFile(projectDir, 'frontend/app.tsx');
+      writeSourceFile(projectDir, 'backend/server.ts');
+
+      expect(detectIncludePatterns(projectDir)).toEqual([
+        'frontend/**/*.{ts,tsx,js,jsx}',
+        'backend/**/*.{ts,tsx,js,jsx}',
+      ]);
+    });
+  });
 });
