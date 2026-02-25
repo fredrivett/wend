@@ -76,7 +76,8 @@ export function registerInitCommand(cli: CAC) {
     if (detected) {
       // Show checkboxes for detected patterns, all selected by default
       const selected = await p.multiselect({
-        message: 'Which directories should be documented? (you can add custom patterns in the next step)',
+        message:
+          'Which directories should be documented? (you can add custom patterns in the next step)',
         options: detectedPatterns.map((pattern) => ({
           value: pattern,
           label: pattern,

@@ -1,4 +1,4 @@
-import { type Dirent, existsSync, readFileSync, readdirSync } from 'node:fs';
+import { type Dirent, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const SOURCE_GLOB_SUFFIX = '**/*.{ts,tsx,js,jsx}';

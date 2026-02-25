@@ -190,10 +190,7 @@ describe('detectIncludePatterns', () => {
       writeSourceFile(projectDir, 'workshop/alpha/src/index.ts');
 
       expect(detectIncludePatterns(projectDir)).toEqual({
-        patterns: [
-          'workshop/alpha/**/*.{ts,tsx,js,jsx}',
-          'workshop/beta/**/*.{ts,tsx,js,jsx}',
-        ],
+        patterns: ['workshop/alpha/**/*.{ts,tsx,js,jsx}', 'workshop/beta/**/*.{ts,tsx,js,jsx}'],
         detected: true,
       });
     });
@@ -210,10 +207,7 @@ describe('detectIncludePatterns', () => {
       writeSourceFile(projectDir, 'packages/internal/src/index.ts');
 
       expect(detectIncludePatterns(projectDir)).toEqual({
-        patterns: [
-          'packages/api/**/*.{ts,tsx,js,jsx}',
-          'packages/web/**/*.{ts,tsx,js,jsx}',
-        ],
+        patterns: ['packages/api/**/*.{ts,tsx,js,jsx}', 'packages/web/**/*.{ts,tsx,js,jsx}'],
         detected: true,
       });
     });
@@ -237,11 +231,7 @@ describe('detectIncludePatterns', () => {
 
     it('falls back to candidate detection when no workspace packages have source files', () => {
       const projectDir = createTempProject();
-      writeFileSync(
-        join(projectDir, 'pnpm-workspace.yaml'),
-        'packages:\n  - docs\n',
-        'utf-8',
-      );
+      writeFileSync(join(projectDir, 'pnpm-workspace.yaml'), 'packages:\n  - docs\n', 'utf-8');
       mkdirSync(join(projectDir, 'docs'), { recursive: true });
       writeFileSync(join(projectDir, 'docs/README.md'), '# docs\n', 'utf-8');
       writeSourceFile(projectDir, 'src/index.ts');
@@ -254,11 +244,7 @@ describe('detectIncludePatterns', () => {
 
     it('prefers pnpm-workspace.yaml over package.json workspaces', () => {
       const projectDir = createTempProject();
-      writeFileSync(
-        join(projectDir, 'pnpm-workspace.yaml'),
-        'packages:\n  - backend\n',
-        'utf-8',
-      );
+      writeFileSync(join(projectDir, 'pnpm-workspace.yaml'), 'packages:\n  - backend\n', 'utf-8');
       writeFileSync(
         join(projectDir, 'package.json'),
         JSON.stringify({ workspaces: ['different-pkg'] }),
@@ -277,7 +263,7 @@ describe('detectIncludePatterns', () => {
       const projectDir = createTempProject();
       writeFileSync(
         join(projectDir, 'pnpm-workspace.yaml'),
-        "packages:\n  - 'frontend'\n  - \"backend\"\n",
+        'packages:\n  - \'frontend\'\n  - "backend"\n',
         'utf-8',
       );
       writeSourceFile(projectDir, 'frontend/app.tsx');
