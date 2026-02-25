@@ -5,6 +5,21 @@ import * as p from '@clack/prompts';
 import type { CAC } from 'cac';
 import { detectIncludePatterns } from '../utils/detect-sources.js';
 
+const FALLBACK_PLACEHOLDER = 'src/**/*.{ts,tsx,js,jsx}';
+const DEFAULT_EXCLUDES = [
+  '**/*.test.{ts,tsx,js,jsx}',
+  '**/*.spec.{ts,tsx,js,jsx}',
+  '**/__tests__/**',
+  '**/e2e/**',
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/build/**',
+  '**/.next/**',
+  '**/coverage/**',
+  '**/.storybook/**',
+  '**/*.stories.{ts,tsx,js,jsx}',
+];
+
 interface InitConfig {
   output: {
     dir: string;
@@ -54,29 +69,86 @@ export function registerInitCommand(cli: CAC) {
       process.exit(0);
     }
 
-    const detectedIncludePatterns = detectIncludePatterns(process.cwd());
-    const includeInitialValue = detectedIncludePatterns.join(',');
+    const { patterns: detectedPatterns, detected } = detectIncludePatterns(process.cwd());
 
-    const includePattern = await p.text({
-      message: 'Which files should be documented?',
-      placeholder: includeInitialValue,
-      initialValue: includeInitialValue,
+    let includePatterns: string[];
+
+    if (detected) {
+      // Show checkboxes for detected patterns, all selected by default
+      const selected = await p.multiselect({
+        message:
+          'Which directories should be documented? (you can add custom patterns in the next step)',
+        options: detectedPatterns.map((pattern) => ({
+          value: pattern,
+          label: pattern,
+        })),
+        initialValues: detectedPatterns,
+      });
+
+      if (p.isCancel(selected)) {
+        p.cancel('Setup cancelled');
+        process.exit(0);
+      }
+
+      includePatterns = selected as string[];
+
+      // Offer a text input for additional custom patterns
+      const custom = await p.text({
+        message: 'Any additional patterns? (comma-separated, or press Enter to skip)',
+        placeholder: 'e.g. scripts/**/*.{ts,tsx,js,jsx}',
+      });
+
+      if (p.isCancel(custom)) {
+        p.cancel('Setup cancelled');
+        process.exit(0);
+      }
+
+      if (custom) {
+        includePatterns.push(...splitGlobPatterns(custom));
+      }
+    } else {
+      // Nothing detected — free-form text input with placeholder
+      const includePattern = await p.text({
+        message: 'Which files should be documented?',
+        placeholder: FALLBACK_PLACEHOLDER,
+      });
+
+      if (p.isCancel(includePattern)) {
+        p.cancel('Setup cancelled');
+        process.exit(0);
+      }
+
+      includePatterns = splitGlobPatterns(includePattern || FALLBACK_PLACEHOLDER);
+    }
+
+    const selectedExcludes = await p.multiselect({
+      message: 'Which patterns should be excluded? (you can add custom patterns in the next step)',
+      options: DEFAULT_EXCLUDES.map((pattern) => ({
+        value: pattern,
+        label: pattern,
+      })),
+      initialValues: DEFAULT_EXCLUDES,
     });
 
-    if (p.isCancel(includePattern)) {
+    if (p.isCancel(selectedExcludes)) {
       p.cancel('Setup cancelled');
       process.exit(0);
     }
 
-    const excludePattern = await p.text({
-      message: 'Which files should be excluded?',
-      placeholder: '**/*.test.ts,**/*.spec.ts,node_modules/**,dist/**,build/**',
-      initialValue: '**/*.test.ts,**/*.spec.ts,node_modules/**,dist/**,build/**',
+    const excludePatterns = selectedExcludes as string[];
+
+    const customExcludes = await p.text({
+      message: 'Any additional exclude patterns? (comma-separated, or press Enter to skip)',
+      placeholder: 'e.g. **/__snapshots__/**,*.generated.ts',
     });
 
-    if (p.isCancel(excludePattern)) {
+    if (p.isCancel(customExcludes)) {
       p.cancel('Setup cancelled');
       process.exit(0);
+    }
+
+    if (customExcludes) {
+      excludePatterns.push(...splitGlobPatterns(customExcludes));
     }
 
     // Generate config
@@ -88,11 +160,8 @@ export function registerInitCommand(cli: CAC) {
         dir: outputDir as string,
       },
       scope: {
-        include: splitGlobPatterns(includePattern as string),
-        exclude: (excludePattern as string)
-          .split(',')
-          .map((p) => p.trim())
-          .filter(Boolean),
+        include: includePatterns,
+        exclude: excludePatterns,
       },
     };
 
