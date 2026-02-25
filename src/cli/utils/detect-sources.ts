@@ -9,11 +9,13 @@ const CANDIDATE_DIRECTORIES = ['src', 'app/src', 'app', 'lib', 'packages', 'apps
 const IGNORED_DIRECTORIES = new Set([
   '.git',
   '.next',
+  '.storybook',
   '.turbo',
   '_syncdocs',
   'build',
   'coverage',
   'dist',
+  'e2e',
   'node_modules',
 ]);
 

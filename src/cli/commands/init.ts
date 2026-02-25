@@ -7,11 +7,17 @@ import { detectIncludePatterns } from '../utils/detect-sources.js';
 
 const FALLBACK_PLACEHOLDER = 'src/**/*.{ts,tsx,js,jsx}';
 const DEFAULT_EXCLUDES = [
-  '**/*.test.ts',
-  '**/*.spec.ts',
-  'node_modules/**',
-  'dist/**',
-  'build/**',
+  '**/*.test.{ts,tsx,js,jsx}',
+  '**/*.spec.{ts,tsx,js,jsx}',
+  '**/__tests__/**',
+  '**/e2e/**',
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/build/**',
+  '**/.next/**',
+  '**/coverage/**',
+  '**/.storybook/**',
+  '**/*.stories.{ts,tsx,js,jsx}',
 ];
 
 interface InitConfig {
