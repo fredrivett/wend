@@ -1,9 +1,9 @@
-# syncdocs configuration
-# Learn more: https://github.com/fredrivett/syncdocs
+# wend configuration
+# Learn more: https://github.com/fredrivett/wend
 
 output:
   # Where generated documentation will be stored
-  dir: _syncdocs
+  dir: _wend
 
 scope:
   # Files to include in documentation

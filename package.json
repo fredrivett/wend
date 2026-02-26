@@ -1,17 +1,17 @@
 {
-  "name": "syncdocs",
+  "name": "wend",
   "version": "0.1.2",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "syncdocs": "./dist/index.mjs"
+    "wend": "./dist/index.mjs"
   },
   "scripts": {
     "dev": "bash scripts/run.sh",
     "dev:cli": "tsdown src/cli/index.ts --watch",
     "build": "tsdown src/cli/index.ts && npm run build:viewer",
     "build:viewer": "vite build --config src/server/viewer/vite.config.ts",
-    "syncdocs": "node dist/index.mjs",
+    "wend": "node dist/index.mjs",
     "test": "vitest",
     "test:extractor": "tsx scripts/test-extractor.ts",
     "format": "biome check --write .",

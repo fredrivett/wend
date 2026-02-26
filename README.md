@@ -1,85 +1,86 @@
-# syncdocs
+# wend
 
-Docs that automatically sync with your code.
+> _wend_ (v.) Old English: to turn, to go one's way
 
-syncdocs builds a call graph from your TypeScript/JavaScript codebase using static analysis. When code changes, the graph gets flagged as stale and can be regenerated with a single command.
+Find the way through your code.
 
-The output is a `graph.json` file (in `_syncdocs/` by default) that tracks symbols, relationships, and content hashes, plus an interactive flow graph viewer.
+Wend maps how your codebase connects — every function, every call, every path between them.
 
 ## Quick Start
 
 ```bash
-npm install syncdocs
+npm install wend
 ```
 
-Initialize syncdocs in your project (interactive wizard):
+Initialize wend in your project (interactive wizard):
 
 ```bash
-npx syncdocs init
+npx wend init
 ```
 
-Generate docs:
+Build the graph:
 
 ```bash
-npx syncdocs sync
+npx wend sync
 ```
 
 ## Commands
 
-### `syncdocs init`
+### `wend init`
 
-Initialize syncdocs in your project. Creates a `_syncdocs/config.yaml` with your preferred output directory and file scope.
+Initialize wend in your project. Creates a `_wend/config.yaml` with your preferred output directory and file scope.
 
-### `syncdocs sync [target]`
+### `wend sync [target]`
 
 Build the dependency graph. Analyzes all source files, extracts symbols and their relationships, and writes `graph.json`.
 
 ```bash
-syncdocs sync              # sync all files in scope
-syncdocs sync src/api/     # sync only files under src/api/
+wend sync              # sync all files in scope
+wend sync src/api/     # sync only files under src/api/
 ```
 
-### `syncdocs check`
+### `wend check`
 
 Check graph freshness. Compares current code hashes against the hashes stored in `graph.json` and reports any that are out of sync. Returns exit code 1 if stale nodes are found (CI-friendly).
 
 ```bash
-syncdocs check        # report stale nodes
+wend check        # report stale nodes
 ```
 
-### `syncdocs status [--verbose]`
+### `wend status [--verbose]`
 
 Show JSDoc coverage for your project.
 
 ```bash
-syncdocs status            # coverage summary
-syncdocs status --verbose  # include full list of symbols missing JSDoc
+wend status            # coverage summary
+wend status --verbose  # include full list of symbols missing JSDoc
 ```
 
-### `syncdocs serve [--port <number>]`
+### `wend serve [--port <number>]`
 
 Start an interactive documentation viewer in your browser. Displays a flow graph of your codebase with clickable nodes that open symbol documentation in a side panel.
 
 ```bash
-syncdocs serve              # default port 3456
-syncdocs serve --port 8080
+wend serve              # default port 3456
+wend serve --port 8080
 ```
 
 ## How it works
 
-1. **Extract** - The TypeScript compiler API parses source files and extracts symbols (functions, classes, arrow functions)
-2. **Match** - Framework matchers identify entry points (Next.js routes, Inngest functions, Trigger.dev tasks)
-3. **Graph** - A call graph is built from static analysis, tracking direct calls, async dispatches, and other connections between symbols
-4. **Hash** - Symbol content is SHA256 hashed so changes can be detected
-5. **Check** - Compare stored hashes against current code to detect when the graph is out of sync
+1. **Map** — Wend walks your source files and finds every symbol: functions, classes, handlers, tasks
+2. **Connect** — It traces the calls between them, building a graph of how everything fits together
+3. **Detect** — Each symbol is hashed, so when code changes, wend knows exactly what's gone stale
+4. **Explore** — Browse the graph in an interactive viewer, or check freshness in CI
+
+Currently supports TypeScript and JavaScript, with framework-aware entry points for Next.js, Inngest, and Trigger.dev.
 
 ## Configuration
 
-`_syncdocs/config.yaml`:
+`_wend/config.yaml`:
 
 ```yaml
 output:
-  dir: _syncdocs
+  dir: _wend
 
 scope:
   include:
@@ -100,8 +101,8 @@ scope:
 ## Contributing
 
 ```bash
-git clone https://github.com/fredrivett/syncdocs
-cd syncdocs
+git clone https://github.com/fredrivett/wend
+cd wend
 npm install
 ```
 

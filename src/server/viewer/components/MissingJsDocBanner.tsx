@@ -14,7 +14,7 @@ export function MissingJsDocBanner() {
       <div className="font-semibold mb-1">No JSDoc comment found</div>
       <p className="mb-2 text-amber-700">
         Generate JSDoc comments automatically by running:{' '}
-        <code className="rounded bg-amber-100 px-1.5 py-0.5 text-xs">syncdocs jsdoc --prompt</code>
+        <code className="rounded bg-amber-100 px-1.5 py-0.5 text-xs">wend jsdoc --prompt</code>
       </p>
       <details className="text-xs text-amber-700">
         <summary className="cursor-pointer hover:text-amber-900 font-medium">
@@ -32,13 +32,13 @@ const JSDOC_AGENT_PROMPT = `Your task is to add JSDoc comments to TypeScript sou
 
 ## What "symbols" means
 
-Symbols are the TypeScript constructs that syncdocs tracks: functions, classes, interfaces, type aliases, enums, and constants. Only **exported** symbols require a /** ... */ JSDoc comment directly above their declaration. Non-exported (file-private) symbols do not need JSDoc.
+Symbols are the TypeScript constructs that wend tracks: functions, classes, interfaces, type aliases, enums, and constants. Only **exported** symbols require a /** ... */ JSDoc comment directly above their declaration. Non-exported (file-private) symbols do not need JSDoc.
 
 ## Feedback loop
 
-syncdocs tells you what's missing. Run:
+wend tells you what's missing. Run:
 
-  npx syncdocs jsdoc
+  npx wend jsdoc
 
 to see current JSDoc coverage and the list of symbols still missing comments. Repeat until it reports 100%.
 
@@ -46,14 +46,14 @@ to see current JSDoc coverage and the list of symbols still missing comments. Re
 
 Work file by file, not symbol by symbol:
 
-1. Run \`npx syncdocs jsdoc --verbose\` to get the list of symbols missing JSDoc, grouped by file.
+1. Run \`npx wend jsdoc --verbose\` to get the list of symbols missing JSDoc, grouped by file.
 2. For each file in the list:
    a. Read the source file.
    b. Add a JSDoc comment above every exported symbol that is missing one. Skip non-exported symbols.
-   c. If a symbol's purpose is unclear from its name, signature, and body, read its generated doc in \`_syncdocs/\` for context on callers and callees.
+   c. If a symbol's purpose is unclear from its name, signature, and body, read its generated doc in \`_wend/\` for context on callers and callees.
    d. Do NOT change any code — only add JSDoc comments.
 3. After all files are done, run the project's formatter and linter (e.g. \`npm run format\`).
-4. Run \`npx syncdocs sync\` to regenerate docs, then \`npx syncdocs jsdoc\` to verify coverage.
+4. Run \`npx wend sync\` to regenerate docs, then \`npx wend jsdoc\` to verify coverage.
 5. If any symbols were missed, fix them and repeat step 4.
 6. Commit with a message like: \`docs: add JSDoc comments across codebase\`
 
@@ -73,4 +73,4 @@ Work file by file, not symbol by symbol:
 
 - Only add JSDoc comments. Do not modify function bodies, signatures, or any other code.
 - If a symbol already has a JSDoc comment, skip it.
-- If you're unsure what a function does, read its call graph in the syncdocs output and the function body carefully before writing the comment.`;
+- If you're unsure what a function does, read its call graph in the wend output and the function body carefully before writing the comment.`;

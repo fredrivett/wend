@@ -1,5 +1,5 @@
 ---
-'syncdocs': patch
+'wend': patch
 ---
 
 Add JSDoc coverage stats to CLI and docs viewer

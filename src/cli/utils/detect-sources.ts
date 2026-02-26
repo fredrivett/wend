@@ -11,7 +11,7 @@ const IGNORED_DIRECTORIES = new Set([
   '.next',
   '.storybook',
   '.turbo',
-  '_syncdocs',
+  '_wend',
   'build',
   'coverage',
   'dist',

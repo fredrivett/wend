@@ -12,7 +12,7 @@ import { ContentHasher } from '../hasher/index.js';
 import { StaleChecker } from './index.js';
 
 const TEST_DIR = join(process.cwd(), '.test-checker');
-const OUTPUT_DIR = join(TEST_DIR, '_syncdocs');
+const OUTPUT_DIR = join(TEST_DIR, '_wend');
 const SRC_DIR = join(TEST_DIR, 'src');
 
 function makeNode(
@@ -72,10 +72,10 @@ describe('StaleChecker', () => {
       const graph = makeGraph([
         makeNode({ id: `${sourcePath}:add`, name: 'add', filePath: sourcePath, hash: correctHash }),
       ]);
-      const store = new GraphStore(join(TEST_DIR, '_syncdocs'));
+      const store = new GraphStore(join(TEST_DIR, '_wend'));
       store.write(graph);
 
-      const result = checker.checkGraph(join(TEST_DIR, '_syncdocs'));
+      const result = checker.checkGraph(join(TEST_DIR, '_wend'));
       expect(result.totalDocs).toBe(1);
       expect(result.staleDocs).toHaveLength(0);
       expect(result.upToDate).toHaveLength(1);
@@ -94,10 +94,10 @@ describe('StaleChecker', () => {
           hash: 'old_hash_that_wont_match',
         }),
       ]);
-      const store = new GraphStore(join(TEST_DIR, '_syncdocs'));
+      const store = new GraphStore(join(TEST_DIR, '_wend'));
       store.write(graph);
 
-      const result = checker.checkGraph(join(TEST_DIR, '_syncdocs'));
+      const result = checker.checkGraph(join(TEST_DIR, '_wend'));
       expect(result.staleDocs).toHaveLength(1);
       expect(result.staleDocs[0].staleDependencies[0].reason).toBe('changed');
       expect(result.staleDocs[0].staleDependencies[0].oldHash).toBe('old_hash_that_wont_match');
@@ -116,10 +116,10 @@ describe('StaleChecker', () => {
           hash: 'abc123',
         }),
       ]);
-      const store = new GraphStore(join(TEST_DIR, '_syncdocs'));
+      const store = new GraphStore(join(TEST_DIR, '_wend'));
       store.write(graph);
 
-      const result = checker.checkGraph(join(TEST_DIR, '_syncdocs'));
+      const result = checker.checkGraph(join(TEST_DIR, '_wend'));
       expect(result.staleDocs).toHaveLength(1);
       expect(result.staleDocs[0].staleDependencies[0].reason).toBe('not-found');
     });
@@ -133,10 +133,10 @@ describe('StaleChecker', () => {
           hash: 'abc123',
         }),
       ]);
-      const store = new GraphStore(join(TEST_DIR, '_syncdocs'));
+      const store = new GraphStore(join(TEST_DIR, '_wend'));
       store.write(graph);
 
-      const result = checker.checkGraph(join(TEST_DIR, '_syncdocs'));
+      const result = checker.checkGraph(join(TEST_DIR, '_wend'));
       expect(result.staleDocs).toHaveLength(1);
       expect(result.staleDocs[0].staleDependencies[0].reason).toBe('file-not-found');
     });
@@ -164,10 +164,10 @@ describe('StaleChecker', () => {
           hash: 'wrong_hash',
         }),
       ]);
-      const store = new GraphStore(join(TEST_DIR, '_syncdocs'));
+      const store = new GraphStore(join(TEST_DIR, '_wend'));
       store.write(graph);
 
-      const result = checker.checkGraph(join(TEST_DIR, '_syncdocs'));
+      const result = checker.checkGraph(join(TEST_DIR, '_wend'));
       expect(result.totalDocs).toBe(2);
       expect(result.staleDocs).toHaveLength(1);
       expect(result.upToDate).toHaveLength(1);
@@ -186,10 +186,10 @@ describe('StaleChecker', () => {
       const graph = makeGraph([
         makeNode({ id: 'src/test.ts:test', name: 'test', filePath: sourcePath, hash: 'wrong' }),
       ]);
-      const store = new GraphStore(join(TEST_DIR, '_syncdocs'));
+      const store = new GraphStore(join(TEST_DIR, '_wend'));
       store.write(graph);
 
-      const result = checker.checkGraph(join(TEST_DIR, '_syncdocs'));
+      const result = checker.checkGraph(join(TEST_DIR, '_wend'));
       expect(result.staleDocs[0].nodeId).toBe('src/test.ts:test');
     });
   });

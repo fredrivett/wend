@@ -1,6 +1,6 @@
-# Syncdocs
+# Wend
 
-Docs that automatically sync with your code.
+Find the way through your code.
 
 ## Development
 

@@ -226,7 +226,7 @@ function serveStaticFile(filePath: string, res: import('node:http').ServerRespon
 }
 
 /**
- * Start the syncdocs documentation viewer HTTP server.
+ * Start the wend documentation viewer HTTP server.
  *
  * Serves the single-page viewer app, a JSON API for the symbol index and
  * individual doc pages, and the graph data. Watches graph.json for changes
@@ -234,7 +234,7 @@ function serveStaticFile(filePath: string, res: import('node:http').ServerRespon
  *
  * If the requested port is taken, retries up to 10 consecutive ports.
  *
- * @param outputDir - Path to the syncdocs output directory (e.g. `_syncdocs`)
+ * @param outputDir - Path to the wend output directory (e.g. `_wend`)
  * @param port - Preferred port number to listen on
  * @returns The running server instance and the URL it's listening on
  * @throws If no available port is found after 10 attempts
@@ -279,7 +279,7 @@ export async function startServer(outputDir: string, port: number) {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
         });
-        res.end(JSON.stringify({ error: 'Graph not found. Run: syncdocs sync' }));
+        res.end(JSON.stringify({ error: 'Graph not found. Run: wend sync' }));
         return;
       }
       res.writeHead(200, {
@@ -309,7 +309,7 @@ export async function startServer(outputDir: string, port: number) {
 
       if (!graph) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Graph not found. Run: syncdocs sync' }));
+        res.end(JSON.stringify({ error: 'Graph not found. Run: wend sync' }));
         return;
       }
 

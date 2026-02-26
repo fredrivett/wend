@@ -1,4 +1,4 @@
-# syncdocs
+# wend
 
 ## 0.1.2
 
@@ -26,4 +26,4 @@
 - 441ae47: Enable automatic npm publishing when changesets release PR is merged
 - 8c5087d: Fix status command spinner by using async file I/O and yielding during symbol extraction so the loading animation stays smooth
 - 9f86a7f: Fix symbol overcounting by excluding dot-directories and common build output directories from source file discovery
-- 87f178b: Auto-expand Visual Flow section in serve viewer and show syncdocs version and generated timestamp in doc metadata
+- 87f178b: Auto-expand Visual Flow section in serve viewer and show wend version and generated timestamp in doc metadata

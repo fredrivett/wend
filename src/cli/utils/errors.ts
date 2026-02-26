@@ -1,17 +1,17 @@
 /**
- * Custom error classes for syncdocs CLI
+ * Custom error classes for wend CLI
  */
 
-/** Base error class for all syncdocs errors. */
-export class SyncDocsError extends Error {
+/** Base error class for all wend errors. */
+export class WendError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'SyncDocsError';
+    this.name = 'WendError';
   }
 }
 
-/** Thrown when the syncdocs configuration file is invalid or missing required fields. */
-export class ConfigError extends SyncDocsError {
+/** Thrown when the wend configuration file is invalid or missing required fields. */
+export class ConfigError extends WendError {
   constructor(message: string) {
     super(message);
     this.name = 'ConfigError';
@@ -19,7 +19,7 @@ export class ConfigError extends SyncDocsError {
 }
 
 /** Thrown when input validation fails (e.g. invalid file paths or symbol names). */
-export class ValidationError extends SyncDocsError {
+export class ValidationError extends WendError {
   constructor(message: string) {
     super(message);
     this.name = 'ValidationError';
@@ -27,7 +27,7 @@ export class ValidationError extends SyncDocsError {
 }
 
 /** Thrown when symbol extraction from a source file fails. */
-export class ExtractionError extends SyncDocsError {
+export class ExtractionError extends WendError {
   constructor(message: string) {
     super(message);
     this.name = 'ExtractionError';
@@ -35,7 +35,7 @@ export class ExtractionError extends SyncDocsError {
 }
 
 /** Thrown when documentation generation fails for a symbol. */
-export class GenerationError extends SyncDocsError {
+export class GenerationError extends WendError {
   constructor(message: string) {
     super(message);
     this.name = 'GenerationError';

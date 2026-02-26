@@ -11,9 +11,9 @@ describe('JSDOC_AGENT_PROMPT', () => {
     expect(JSDOC_AGENT_PROMPT).toContain('## Important');
   });
 
-  it('references the syncdocs jsdoc command', () => {
-    expect(JSDOC_AGENT_PROMPT).toContain('npx syncdocs jsdoc');
-    expect(JSDOC_AGENT_PROMPT).toContain('npx syncdocs jsdoc --verbose');
+  it('references the wend jsdoc command', () => {
+    expect(JSDOC_AGENT_PROMPT).toContain('npx wend jsdoc');
+    expect(JSDOC_AGENT_PROMPT).toContain('npx wend jsdoc --verbose');
   });
 
   it('includes style guidance for @param without types', () => {
