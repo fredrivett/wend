@@ -15,9 +15,10 @@ import {
 import ELK, { type ElkNode } from 'elkjs/lib/elk.bundled.js';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import '@xyflow/react/dist/style.css';
 
-import type { FlowGraph as FlowGraphData, GraphNode } from '../../../graph/types.js';
+import type { FlowGraph as FlowGraphData } from '../../../graph/types.js';
 import { GRID_SIZE, snapCeil } from '../grid';
 import { DocPanel } from './DocPanel';
 import { defaultLayoutOptions, type LayoutOptions, LayoutSettings } from './LayoutSettings';
@@ -83,7 +84,6 @@ function toReactFlowNode(node: GraphNode): Node {
       isAsync: node.isAsync,
       entryType: node.entryType,
       metadata: node.metadata,
-      highlighted: true,
       hasJsDoc: node.hasJsDoc,
     },
   };
@@ -169,14 +169,39 @@ function FlowGraphInner({
 }: FlowGraphProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(() => {
+    const param = searchParams.get('selected');
+    return param ? new Set(param.split(',').map(decodeURIComponent)) : new Set<string>();
+  });
+  const [focusedEntries, setFocusedEntries] = useState<Set<string>>(() => {
+    const param = searchParams.get('focused');
+    return param ? new Set(param.split(',').map(decodeURIComponent)) : new Set<string>();
+  });
   const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(defaultLayoutOptions);
   const [needsLayout, setNeedsLayout] = useState(false);
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
   const visibleGraphRef = useRef<FlowGraphData | null>(null);
   const sizeCache = useRef<SizeCache>(new Map());
+  const [initialMeasureDone, setInitialMeasureDone] = useState(false);
+
+  // Sync selection state to URL query params
+  useEffect(() => {
+    setSearchParams((prev) => {
+      if (selectedEntries.size > 0) {
+        prev.set('selected', [...selectedEntries].map(encodeURIComponent).join(','));
+      } else {
+        prev.delete('selected');
+      }
+      if (focusedEntries.size > 0) {
+        prev.set('focused', [...focusedEntries].map(encodeURIComponent).join(','));
+      } else {
+        prev.delete('focused');
+      }
+      return prev;
+    });
+  }, [selectedEntries, focusedEntries, setSearchParams]);
 
   // Shared helper: apply ELK positions to nodes and fit the view
   const applyPositionsAndFit = useCallback(
@@ -206,12 +231,13 @@ function FlowGraphInner({
     [setNodes, fitView, onLayoutReady],
   );
 
-  // Compute connected nodes: trace callers upward and callees downward separately
-  const highlightedIds = useMemo(() => {
-    if (!selectedEntry) return null;
-    const connected = new Set<string>([selectedEntry]);
+  // Compute visible node IDs: union of connected subgraphs from all focused entries
+  const visibleIds = useMemo(() => {
+    if (focusedEntries.size === 0) return null;
+    const connected = new Set<string>(focusedEntries);
 
-    const downQueue = [selectedEntry];
+    // BFS downward from all focused entries (callees)
+    const downQueue = [...focusedEntries];
     while (downQueue.length > 0) {
       const current = downQueue.shift() as string;
       for (const edge of graph.edges) {
@@ -222,7 +248,8 @@ function FlowGraphInner({
       }
     }
 
-    const upQueue = [selectedEntry];
+    // BFS upward from all focused entries (callers)
+    const upQueue = [...focusedEntries];
     while (upQueue.length > 0) {
       const current = upQueue.shift() as string;
       for (const edge of graph.edges) {
@@ -234,7 +261,7 @@ function FlowGraphInner({
     }
 
     return connected;
-  }, [selectedEntry, graph.edges]);
+  }, [focusedEntries, graph.edges]);
 
   // Apply type and search filters
   const filteredGraph = useMemo(() => {
@@ -279,52 +306,56 @@ function FlowGraphInner({
     return filtered;
   }, [graph, searchQuery, enabledTypes]);
 
-  // Filter to only highlighted nodes
-  const visibleGraph = useMemo(() => {
-    if (!highlightedIds) return filteredGraph;
+  // Filter to only focused subgraph
+  const focusFilteredGraph = useMemo(() => {
+    if (!visibleIds) return filteredGraph;
     return {
       ...filteredGraph,
-      nodes: filteredGraph.nodes.filter((n) => highlightedIds.has(n.id)),
+      nodes: filteredGraph.nodes.filter((n) => visibleIds.has(n.id)),
       edges: filteredGraph.edges.filter(
-        (e) => highlightedIds.has(e.source) && highlightedIds.has(e.target),
+        (e) => visibleIds.has(e.source) && visibleIds.has(e.target),
       ),
     };
-  }, [filteredGraph, highlightedIds]);
+  }, [filteredGraph, visibleIds]);
 
-  // When visibleGraph changes: use cached sizes for instant layout, or fall back to two-pass measurement
+  // First render: measure ALL nodes (behind loading screen). After: render filtered view.
+  const renderGraph = initialMeasureDone ? focusFilteredGraph : graph;
+
+  // When renderGraph changes: use cached sizes for instant layout, or fall back to two-pass measurement
   useEffect(() => {
-    visibleGraphRef.current = visibleGraph;
-    const rfNodes = visibleGraph.nodes.map((n) => {
-      const rfNode = toReactFlowNode(n);
-      if (selectedEntry) {
-        rfNode.data = { ...rfNode.data, dimmed: n.id !== selectedEntry };
-      }
-      return rfNode;
-    });
-    setEdges(toReactFlowEdges(visibleGraph.edges, showConditionals));
+    visibleGraphRef.current = renderGraph;
+    const rfNodes = renderGraph.nodes.map((n) => toReactFlowNode(n));
+    setEdges(toReactFlowEdges(renderGraph.edges, showConditionals));
 
-    const allCached = visibleGraph.nodes.every((n) => sizeCache.current.has(n.id));
-    if (allCached && visibleGraph.nodes.length > 0) {
+    const allCached = renderGraph.nodes.every((n) => sizeCache.current.has(n.id));
+    if (allCached && renderGraph.nodes.length > 0) {
       // Fast path: compute positions before rendering so nodes never appear at origin
-      runElkLayout(rfNodes, visibleGraph.edges, layoutOptions, sizeCache.current).then(
-        (positions) => applyPositionsAndFit(positions, rfNodes),
+      runElkLayout(rfNodes, renderGraph.edges, layoutOptions, sizeCache.current).then((positions) =>
+        applyPositionsAndFit(positions, rfNodes),
       );
     } else {
       // Slow path: render at origin so React Flow can measure, then layout in Pass 2
       setNodes(rfNodes);
       setNeedsLayout(true);
     }
-  }, [
-    visibleGraph,
-    setNodes,
-    setEdges,
-    layoutOptions,
-    applyPositionsAndFit,
-    selectedEntry,
-    showConditionals,
-  ]);
+  }, [renderGraph, setNodes, setEdges, layoutOptions, applyPositionsAndFit, showConditionals]);
+
+  // Update node data (selected/dimmed) without triggering re-layout
+  useEffect(() => {
+    setNodes((prev) =>
+      prev.map((node) => {
+        const isSelected = selectedEntries.has(node.id);
+        const dimmed = selectedEntries.size > 0 ? !isSelected : false;
+        return {
+          ...node,
+          data: { ...node.data, selected: isSelected, dimmed },
+        };
+      }),
+    );
+  }, [selectedEntries, setNodes]);
 
   // Pass 2: once nodes are measured, cache sizes and run ELK with real dimensions
+  // biome-ignore lint/correctness/useExhaustiveDependencies: initialMeasureDone is write-only here
   useEffect(() => {
     if (!needsLayout || !nodesInitialized || !visibleGraphRef.current) return;
     setNeedsLayout(false);
@@ -338,6 +369,8 @@ function FlowGraphInner({
         });
       }
     }
+
+    if (!initialMeasureDone) setInitialMeasureDone(true);
 
     const currentGraph = visibleGraphRef.current;
     runElkLayout(nodes, currentGraph.edges, layoutOptions, sizeCache.current).then((positions) =>
@@ -354,19 +387,72 @@ function FlowGraphInner({
     );
   }, [layoutOptions]);
 
-  const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      const graphNode = graph.nodes.find((n) => n.id === node.id);
-      if (!graphNode) return;
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    const isMultiSelect = event.metaKey || event.ctrlKey;
 
-      setSelectedEntry((prev) => (prev === node.id ? null : node.id));
-    },
-    [graph.nodes],
-  );
+    if (isMultiSelect) {
+      setSelectedEntries((prev) => {
+        const next = new Set(prev);
+        if (next.has(node.id)) {
+          next.delete(node.id);
+        } else {
+          next.add(node.id);
+        }
+        return next;
+      });
+    } else {
+      setSelectedEntries((prev) => {
+        if (prev.size === 1 && prev.has(node.id)) {
+          setFocusedEntries(new Set());
+          return new Set();
+        }
+        const next = new Set([node.id]);
+        setFocusedEntries(next);
+        return next;
+      });
+    }
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedEntries(new Set());
+    setFocusedEntries(new Set());
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearSelection();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [clearSelection]);
 
   return (
     <div className="w-full h-full relative">
       <LayoutSettings options={layoutOptions} onChange={setLayoutOptions} />
+      {(selectedEntries.size > 0 || focusedEntries.size > 0) && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur border border-gray-200 rounded-full px-3 py-1.5 shadow-sm text-xs text-gray-600">
+          <span>{selectedEntries.size} selected</span>
+          {(selectedEntries.size !== focusedEntries.size ||
+            [...selectedEntries].some((id) => !focusedEntries.has(id))) && (
+            <button
+              type="button"
+              onClick={() => setFocusedEntries(new Set(selectedEntries))}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Focus
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            Clear
+          </button>
+        </div>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -391,7 +477,7 @@ function FlowGraphInner({
           maskColor="rgba(0,0,0,0.05)"
         />
       </ReactFlow>
-      <DocPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
+      <DocPanel node={null} onClose={() => {}} />
     </div>
   );
 }

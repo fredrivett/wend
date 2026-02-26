@@ -13,8 +13,8 @@ interface NodeData {
     eventTrigger?: string;
     taskId?: string;
   };
-  highlighted?: boolean;
   dimmed?: boolean;
+  selected?: boolean;
   hasJsDoc?: boolean;
 }
 
@@ -101,8 +101,8 @@ function EntryPointNode({ data }: NodeProps) {
     <div
       className={nodeClass(
         d,
-        `border-2 ${config.border} rounded-xl px-3.5 py-2.5 min-w-[160px]`,
-        d.highlighted ? `${config.bg} ring-2 ${config.ring} shadow-md` : 'bg-white shadow',
+        `border-2 ${config.border} rounded-xl px-3.5 py-2.5 min-w-[160px] ${config.bg} shadow-md`,
+        d.selected ? `ring-2 ${config.ring}` : '',
       )}
     >
       <Handle type="target" position={Position.Top} style={{ background: config.handle }} />
@@ -134,10 +134,8 @@ function ComponentNode({ data }: NodeProps) {
     <div
       className={nodeClass(
         d,
-        'border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px]',
-        d.highlighted
-          ? 'border-orange-600 bg-orange-50 ring-2 ring-orange-500/25 shadow'
-          : 'border-orange-200 bg-white shadow-sm',
+        'border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px] border-orange-600 bg-orange-50 shadow',
+        d.selected ? 'ring-2 ring-orange-500/25' : '',
       )}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#f97316' }} />
@@ -160,10 +158,8 @@ function HookNode({ data }: NodeProps) {
     <div
       className={nodeClass(
         d,
-        'border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px]',
-        d.highlighted
-          ? 'border-lime-600 bg-lime-50 ring-2 ring-lime-500/25 shadow'
-          : 'border-lime-200 bg-white shadow-sm',
+        'border-[1.5px] rounded-[10px] px-3 py-2 min-w-[140px] border-lime-600 bg-lime-50 shadow',
+        d.selected ? 'ring-2 ring-lime-500/25' : '',
       )}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#84cc16' }} />
@@ -186,10 +182,8 @@ function FunctionNode({ data }: NodeProps) {
     <div
       className={nodeClass(
         d,
-        'border rounded-lg px-3 py-2 min-w-[120px]',
-        d.highlighted
-          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/25 shadow'
-          : 'border-gray-200 bg-white shadow-sm',
+        'border rounded-lg px-3 py-2 min-w-[120px] border-blue-500 bg-blue-50 shadow',
+        d.selected ? 'ring-2 ring-blue-500/25' : '',
       )}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#9ca3af' }} />

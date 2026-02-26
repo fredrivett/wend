@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter, Route, Routes, useSearchParams } from 'react-router';
 import type { FlowGraph as FlowGraphData } from '../../graph/types.js';
 import { DocsTree } from './components/DocsTree';
 import { DocsViewer } from './components/DocsViewer';
@@ -82,9 +82,30 @@ function Layout() {
   const [graphError, setGraphError] = useState<string | null>(null);
   const [graphLoading, setGraphLoading] = useState(true);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [enabledTypes, setEnabledTypes] = useState<Set<NodeCategory> | null>(null);
-  const [showConditionals, setShowConditionals] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  /** Set or delete a single URL search param. */
+  const setParam = useCallback(
+    (key: string, value: string | null) => {
+      setSearchParams((prev) => {
+        if (value) prev.set(key, value);
+        else prev.delete(key);
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const searchQuery = searchParams.get('q') || '';
+  const setSearchQuery = useCallback((q: string) => setParam('q', q || null), [setParam]);
+
+  const enabledTypes = useMemo<Set<NodeCategory> | null>(() => {
+    const param = searchParams.get('types');
+    if (!param) return null;
+    return new Set(param.split(','));
+  }, [searchParams]);
+
+  const showConditionals = searchParams.get('conditionals') === 'true';
 
   useEffect(() => {
     fetch('/api/graph')
@@ -159,23 +180,24 @@ function Layout() {
 
   const onToggleType = useCallback(
     (category: NodeCategory) => {
-      setEnabledTypes((prev) => {
-        if (!prev) {
-          const all = new Set(availableTypes.keys());
-          all.delete(category);
-          return all;
-        }
-        const next = new Set(prev);
+      const current = enabledTypes;
+      let next: Set<NodeCategory> | null;
+      if (!current) {
+        const all = new Set(availableTypes.keys());
+        all.delete(category);
+        next = all;
+      } else {
+        next = new Set(current);
         if (next.has(category)) {
           next.delete(category);
         } else {
           next.add(category);
         }
-        if (next.size === availableTypes.size) return null;
-        return next;
-      });
+        if (next.size === availableTypes.size) next = null;
+      }
+      setParam('types', next ? [...next].join(',') : null);
     },
-    [availableTypes],
+    [enabledTypes, availableTypes, setParam],
   );
 
   // Set of visible symbol names from the filtered graph, used to sync tree with graph filters.
@@ -199,10 +221,10 @@ function Layout() {
           availableTypes={availableTypes}
           enabledTypes={enabledTypes}
           onToggleType={onToggleType}
-          onSoloType={(category) => setEnabledTypes(new Set([category]))}
-          onResetTypes={() => setEnabledTypes(null)}
+          onSoloType={(category) => setParam('types', category)}
+          onResetTypes={() => setParam('types', null)}
           showConditionals={showConditionals}
-          onToggleConditionals={() => setShowConditionals((prev) => !prev)}
+          onToggleConditionals={() => setParam('conditionals', showConditionals ? null : 'true')}
           hasConditionalEdges={hasConditionalEdges}
         />
         <div className="border-t border-gray-200" />
