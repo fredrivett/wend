@@ -324,16 +324,7 @@ function FlowGraphInner({
   // When renderGraph changes: use cached sizes for instant layout, or fall back to two-pass measurement
   useEffect(() => {
     visibleGraphRef.current = renderGraph;
-    const rfNodes = renderGraph.nodes.map((n) => {
-      const rfNode = toReactFlowNode(n);
-      const isSelected = selectedEntries.has(n.id);
-      rfNode.data = {
-        ...rfNode.data,
-        selected: isSelected,
-        dimmed: selectedEntries.size > 0 ? !isSelected : false,
-      };
-      return rfNode;
-    });
+    const rfNodes = renderGraph.nodes.map((n) => toReactFlowNode(n));
     setEdges(toReactFlowEdges(renderGraph.edges, showConditionals));
 
     const allCached = renderGraph.nodes.every((n) => sizeCache.current.has(n.id));
@@ -364,6 +355,7 @@ function FlowGraphInner({
   }, [selectedEntries, setNodes]);
 
   // Pass 2: once nodes are measured, cache sizes and run ELK with real dimensions
+  // biome-ignore lint/correctness/useExhaustiveDependencies: initialMeasureDone is write-only here
   useEffect(() => {
     if (!needsLayout || !nodesInitialized || !visibleGraphRef.current) return;
     setNeedsLayout(false);
