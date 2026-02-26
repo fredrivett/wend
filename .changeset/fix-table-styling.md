@@ -1,5 +1,5 @@
 ---
-"syncdocs": patch
+"wend": patch
 ---
 
 Fix parameter table rendering and destructured parameter extraction

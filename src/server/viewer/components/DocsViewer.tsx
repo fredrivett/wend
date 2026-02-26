@@ -9,7 +9,7 @@ interface DocData {
   name: string;
   sourcePath: string;
   markdown: string;
-  syncdocsVersion?: string;
+  wendVersion?: string;
   generated?: string;
   dependencyGraph?: string;
   related?: Array<{ name: string; docPath: string | null }>;
@@ -126,7 +126,7 @@ export function DocsViewer() {
   if (!docPath) {
     return (
       <div className="flex flex-col items-center justify-center h-full font-sans text-gray-500 gap-2">
-        <div className="font-semibold text-base">syncdocs viewer</div>
+        <div className="font-semibold text-base">wend viewer</div>
         <div className="text-sm">Select a symbol from the sidebar to view its documentation.</div>
       </div>
     );
@@ -145,7 +145,7 @@ export function DocsViewer() {
       <div className="flex flex-col items-center justify-center h-full font-sans text-gray-500 gap-2">
         <div className="font-semibold text-base">Document not found</div>
         <div className="text-sm">
-          Run <code className="bg-gray-100 px-1.5 rounded">syncdocs sync</code> to generate
+          Run <code className="bg-gray-100 px-1.5 rounded">wend sync</code> to generate
           documentation.
         </div>
       </div>
@@ -206,9 +206,7 @@ export function DocsViewer() {
   if (doc.isAsync) badges.push({ variant: 'async', label: 'async' });
 
   const metaParts: string[] = [];
-  metaParts.push(
-    `syncdocs v${doc.syncdocsVersion ? escapeHtml(doc.syncdocsVersion) : ': unknown'}`,
-  );
+  metaParts.push(`wend v${doc.wendVersion ? escapeHtml(doc.wendVersion) : ': unknown'}`);
   if (doc.generated) {
     const date = new Date(doc.generated);
     const formatted = `${date.toLocaleDateString(undefined, {

@@ -152,8 +152,8 @@ export function DocPanel({ node, onClose }: DocPanelProps) {
               No documentation found for this symbol.
               <br />
               <span className="text-xs">
-                Run <code className="rounded bg-gray-100 px-1 py-0.5">syncdocs sync</code> to
-                generate docs.
+                Run <code className="rounded bg-gray-100 px-1 py-0.5">wend sync</code> to generate
+                docs.
               </span>
             </div>
           )}

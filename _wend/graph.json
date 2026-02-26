@@ -83,7 +83,7 @@
         6,
         91
       ],
-      "description": "Register the `syncdocs check` CLI command.\n\nScans all generated docs for staleness by comparing source code hashes\nagainst the hashes stored in doc frontmatter. Exits with code 1 if any\nstale docs are found (useful for CI).",
+      "description": "Register the `wend check` CLI command.\n\nScans all generated docs for staleness by comparing source code hashes\nagainst the hashes stored in doc frontmatter. Exits with code 1 if any\nstale docs are found (useful for CI).",
       "structuredParams": [
         {
           "name": "cli",
@@ -151,7 +151,7 @@
         16,
         122
       ],
-      "description": "Register the `syncdocs init` CLI command.\n\nRuns an interactive setup wizard that prompts for output directory,\ninclude/exclude patterns, and writes a `config.yaml` file.",
+      "description": "Register the `wend init` CLI command.\n\nRuns an interactive setup wizard that prompts for output directory,\ninclude/exclude patterns, and writes a `config.yaml` file.",
       "structuredParams": [
         {
           "name": "cli",
@@ -219,7 +219,7 @@
         10,
         64
       ],
-      "description": "Register the `syncdocs serve` CLI command.\n\nStarts the documentation viewer HTTP server and optionally opens it\nin the default browser.",
+      "description": "Register the `wend serve` CLI command.\n\nStarts the documentation viewer HTTP server and optionally opens it\nin the default browser.",
       "structuredParams": [
         {
           "name": "cli",
@@ -241,7 +241,7 @@
         14,
         107
       ],
-      "description": "Register the `syncdocs status` CLI command.\n\nScans the project for documentation coverage and displays statistics\nincluding a coverage bar, undocumented symbols, and a suggestion for\nthe next file to document.",
+      "description": "Register the `wend status` CLI command.\n\nScans the project for documentation coverage and displays statistics\nincluding a coverage bar, undocumented symbols, and a suggestion for\nthe next file to document.",
       "structuredParams": [
         {
           "name": "cli",
@@ -263,7 +263,7 @@
         9,
         141
       ],
-      "description": "Register the `syncdocs sync` CLI command.\n\nFinds source files, builds the dependency graph, and generates static\nmarkdown documentation for every node. Optionally filters to a target path.",
+      "description": "Register the `wend sync` CLI command.\n\nFinds source files, builds the dependency graph, and generates static\nmarkdown documentation for every node. Optionally filters to a target path.",
       "structuredParams": [
         {
           "name": "cli",
@@ -285,7 +285,7 @@
         7,
         7
       ],
-      "description": "The syncdocs CLI instance, powered by cac.",
+      "description": "The wend CLI instance, powered by cac.",
       "isExported": false
     },
     {
@@ -313,7 +313,7 @@
         10,
         36
       ],
-      "description": "Load the syncdocs configuration from `_syncdocs/config.yaml`.\n\nParses the YAML config file to extract the output directory and\ninclude/exclude scope patterns. Returns null if no config file exists.",
+      "description": "Load the wend configuration from `_wend/config.yaml`.\n\nParses the YAML config file to extract the output directory and\ninclude/exclude scope patterns. Returns null if no config file exists.",
       "structuredParams": [
         {
           "name": "cwd",
@@ -324,7 +324,7 @@
           "description": "Working directory to resolve the config path from"
         }
       ],
-      "returnType": "SyncdocsConfig | null",
+      "returnType": "WendConfig | null",
       "isExported": true
     },
     {
@@ -503,8 +503,8 @@
       "isExported": false
     },
     {
-      "id": "src/cli/utils/errors.ts:SyncDocsError",
-      "name": "SyncDocsError",
+      "id": "src/cli/utils/errors.ts:WendError",
+      "name": "WendError",
       "kind": "class",
       "filePath": "src/cli/utils/errors.ts",
       "isAsync": false,
@@ -513,7 +513,7 @@
         1,
         11
       ],
-      "description": "Base error class for all syncdocs errors.",
+      "description": "Base error class for all wend errors.",
       "isExported": true
     },
     {
@@ -527,7 +527,7 @@
         11,
         19
       ],
-      "description": "Thrown when the syncdocs configuration file is invalid or missing required fields.",
+      "description": "Thrown when the wend configuration file is invalid or missing required fields.",
       "isExported": true
     },
     {
@@ -639,7 +639,7 @@
         },
         {
           "name": "scope",
-          "type": "SyncdocsConfig['scope']",
+          "type": "WendConfig['scope']",
           "isOptional": false,
           "isRest": false
         }
@@ -682,7 +682,7 @@
         },
         {
           "name": "scope",
-          "type": "SyncdocsConfig['scope']",
+          "type": "WendConfig['scope']",
           "isOptional": false,
           "isRest": false
         },
@@ -717,7 +717,7 @@
         },
         {
           "name": "scope",
-          "type": "SyncdocsConfig['scope']",
+          "type": "WendConfig['scope']",
           "isOptional": false,
           "isRest": false
         }
@@ -790,7 +790,7 @@
         },
         {
           "name": "scope",
-          "type": "SyncdocsConfig['scope']",
+          "type": "WendConfig['scope']",
           "isOptional": false,
           "isRest": false
         }
@@ -843,7 +843,7 @@
         },
         {
           "name": "scope",
-          "type": "SyncdocsConfig['scope']",
+          "type": "WendConfig['scope']",
           "isOptional": false,
           "isRest": false,
           "description": "Include and exclude glob patterns"
@@ -2133,7 +2133,7 @@
           "type": "string",
           "isOptional": false,
           "isRest": false,
-          "description": "Path to the syncdocs output directory"
+          "description": "Path to the wend output directory"
         }
       ],
       "returnType": "SymbolIndex",
@@ -2321,7 +2321,7 @@
           "type": "string",
           "isOptional": false,
           "isRest": false,
-          "description": "Path to the syncdocs output directory"
+          "description": "Path to the wend output directory"
         }
       ],
       "isExported": false
@@ -2368,14 +2368,14 @@
         277,
         408
       ],
-      "description": "Start the syncdocs documentation viewer HTTP server.\n\nServes the single-page viewer app, a JSON API for the symbol index and\nindividual doc pages, and the graph data. Watches the output directory\nfor changes and rebuilds the index automatically.\n\nIf the requested port is taken, retries up to 10 consecutive ports.",
+      "description": "Start the wend documentation viewer HTTP server.\n\nServes the single-page viewer app, a JSON API for the symbol index and\nindividual doc pages, and the graph data. Watches the output directory\nfor changes and rebuilds the index automatically.\n\nIf the requested port is taken, retries up to 10 consecutive ports.",
       "structuredParams": [
         {
           "name": "outputDir",
           "type": "string",
           "isOptional": false,
           "isRest": false,
-          "description": "Path to the syncdocs output directory (e.g. `_syncdocs`)"
+          "description": "Path to the wend output directory (e.g. `_wend`)"
         },
         {
           "name": "port",

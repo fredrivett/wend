@@ -38,8 +38,7 @@ function GraphView({
         <div className="font-semibold">Error loading graph</div>
         <div className="text-gray-500 text-sm">{error}</div>
         <div className="text-gray-400 text-[13px] mt-2">
-          Make sure you've run <code className="bg-gray-100 px-1.5 rounded">syncdocs graph</code>{' '}
-          first.
+          Make sure you've run <code className="bg-gray-100 px-1.5 rounded">wend graph</code> first.
         </div>
       </div>
     );
@@ -50,8 +49,8 @@ function GraphView({
       <div className="flex flex-col items-center justify-center h-full font-sans text-gray-500 gap-2">
         <div className="font-semibold text-base">No graph data</div>
         <div className="text-sm">
-          Run <code className="bg-gray-100 px-1.5 rounded">syncdocs graph</code> to build the
-          project call graph.
+          Run <code className="bg-gray-100 px-1.5 rounded">wend graph</code> to build the project
+          call graph.
         </div>
       </div>
     );

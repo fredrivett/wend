@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
-const apiPort = process.env.SYNCDOCS_API_PORT || '3457';
+const apiPort = process.env.WEND_API_PORT || '3457';
 
 export default defineConfig({
   plugins: [tailwindcss(), react()],

@@ -1,5 +1,5 @@
 ---
-'syncdocs': patch
+'wend': patch
 ---
 
 Add conditional branching awareness to call graph edges

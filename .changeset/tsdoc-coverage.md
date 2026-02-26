@@ -1,5 +1,5 @@
 ---
-'syncdocs': patch
+'wend': patch
 ---
 
 Complete TSDoc coverage and expand documentation scope

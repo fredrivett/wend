@@ -33,13 +33,13 @@ export const JSDOC_AGENT_PROMPT = `Your task is to add JSDoc comments to TypeScr
 
 ## What "symbols" means
 
-Symbols are the TypeScript constructs that syncdocs tracks: functions, classes, interfaces, type aliases, enums, and constants. Only **exported** symbols require a /** ... */ JSDoc comment directly above their declaration. Non-exported (file-private) symbols do not need JSDoc.
+Symbols are the TypeScript constructs that wend tracks: functions, classes, interfaces, type aliases, enums, and constants. Only **exported** symbols require a /** ... */ JSDoc comment directly above their declaration. Non-exported (file-private) symbols do not need JSDoc.
 
 ## Feedback loop
 
-syncdocs tells you what's missing. Run:
+wend tells you what's missing. Run:
 
-  npx syncdocs jsdoc
+  npx wend jsdoc
 
 to see current JSDoc coverage and the list of symbols still missing comments. Repeat until it reports 100%.
 
@@ -47,14 +47,14 @@ to see current JSDoc coverage and the list of symbols still missing comments. Re
 
 Work file by file, not symbol by symbol:
 
-1. Run \`npx syncdocs jsdoc --verbose\` to get the list of symbols missing JSDoc, grouped by file.
+1. Run \`npx wend jsdoc --verbose\` to get the list of symbols missing JSDoc, grouped by file.
 2. For each file in the list:
    a. Read the source file.
    b. Add a JSDoc comment above every exported symbol that is missing one. Skip non-exported symbols.
-   c. If a symbol's purpose is unclear from its name, signature, and body, read its generated doc in \`_syncdocs/\` for context on callers and callees.
+   c. If a symbol's purpose is unclear from its name, signature, and body, read its generated doc in \`_wend/\` for context on callers and callees.
    d. Do NOT change any code — only add JSDoc comments.
 3. After all files are done, run the project's formatter and linter (e.g. \`npm run format\`).
-4. Run \`npx syncdocs sync\` to regenerate docs, then \`npx syncdocs jsdoc\` to verify coverage.
+4. Run \`npx wend sync\` to regenerate docs, then \`npx wend jsdoc\` to verify coverage.
 5. If any symbols were missed, fix them and repeat step 4.
 6. Commit with a message like: \`docs: add JSDoc comments across codebase\`
 
@@ -102,10 +102,10 @@ export async function callVisionAPI(
 
 - Only add JSDoc comments. Do not modify function bodies, signatures, or any other code.
 - If a symbol already has a JSDoc comment, skip it.
-- If you're unsure what a function does, read its call graph in the syncdocs output and the function body carefully before writing the comment.`;
+- If you're unsure what a function does, read its call graph in the wend output and the function body carefully before writing the comment.`;
 
 /**
- * Register the `syncdocs jsdoc` CLI command.
+ * Register the `wend jsdoc` CLI command.
  *
  * Without flags: scans the project and reports JSDoc coverage with a list
  * of symbols missing comments.
@@ -122,9 +122,9 @@ export function registerJsDocCommand(cli: CAC) {
     .option('--verbose', 'Show all symbols missing JSDoc')
     .option('--prompt', 'Print agent prompt to stdout for piping to coding agents')
     .option('--run <agent>', 'Run an agent to auto-populate JSDoc (e.g. claude)')
-    .example('syncdocs jsdoc')
-    .example('syncdocs jsdoc --prompt | pbcopy')
-    .example('syncdocs jsdoc --run claude')
+    .example('wend jsdoc')
+    .example('wend jsdoc --prompt | pbcopy')
+    .example('wend jsdoc --run claude')
     .action(async (options: JsDocOptions) => {
       if (options.run) {
         const agentName = options.run.toLowerCase();
@@ -172,7 +172,7 @@ export function registerJsDocCommand(cli: CAC) {
       try {
         const config = loadConfig();
         if (!config) {
-          p.cancel('Config not found. Run: syncdocs init');
+          p.cancel('Config not found. Run: wend init');
           process.exit(1);
         }
 
@@ -194,7 +194,7 @@ export function registerJsDocCommand(cli: CAC) {
         p.outro(
           jsDocCoverage === 100
             ? '\u2728 Full JSDoc coverage!'
-            : `${jsDocCoverage}% JSDoc coverage \u2014 fix with:\n  \x1b[1;36msyncdocs jsdoc --run claude\x1b[0m  Hand off to Claude Code\n  \x1b[1;36msyncdocs jsdoc --run codex\x1b[0m   Hand off to Codex\n  \x1b[1;36msyncdocs jsdoc --prompt\x1b[0m      Print agent prompt to stdout`,
+            : `${jsDocCoverage}% JSDoc coverage \u2014 fix with:\n  \x1b[1;36mwend jsdoc --run claude\x1b[0m  Hand off to Claude Code\n  \x1b[1;36mwend jsdoc --run codex\x1b[0m   Hand off to Codex\n  \x1b[1;36mwend jsdoc --prompt\x1b[0m      Print agent prompt to stdout`,
         );
       } catch (error) {
         p.cancel(

@@ -1,4 +1,4 @@
-# Syncdocs
+# Wend
 
 Docs that automatically sync with your code.
 
