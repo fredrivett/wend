@@ -1,10 +1,10 @@
 # wend
 
-Docs that automatically sync with your code.
+> _wend_ (v.) Old English: to turn, to go one's way
 
-wend builds a call graph from your TypeScript/JavaScript codebase using static analysis. When code changes, the graph gets flagged as stale and can be regenerated with a single command.
+Find the way through your code.
 
-The output is a `graph.json` file (in `_wend/` by default) that tracks symbols, relationships, and content hashes, plus an interactive flow graph viewer.
+Wend maps how your codebase connects — every function, every call, every path between them.
 
 ## Quick Start
 
@@ -18,7 +18,7 @@ Initialize wend in your project (interactive wizard):
 npx wend init
 ```
 
-Generate docs:
+Build the graph:
 
 ```bash
 npx wend sync
@@ -67,11 +67,12 @@ wend serve --port 8080
 
 ## How it works
 
-1. **Extract** - The TypeScript compiler API parses source files and extracts symbols (functions, classes, arrow functions)
-2. **Match** - Framework matchers identify entry points (Next.js routes, Inngest functions, Trigger.dev tasks)
-3. **Graph** - A call graph is built from static analysis, tracking direct calls, async dispatches, and other connections between symbols
-4. **Hash** - Symbol content is SHA256 hashed so changes can be detected
-5. **Check** - Compare stored hashes against current code to detect when the graph is out of sync
+1. **Map** — Wend walks your source files and finds every symbol: functions, classes, handlers, tasks
+2. **Connect** — It traces the calls between them, building a graph of how everything fits together
+3. **Detect** — Each symbol is hashed, so when code changes, wend knows exactly what's gone stale
+4. **Explore** — Browse the graph in an interactive viewer, or check freshness in CI
+
+Currently supports TypeScript and JavaScript, with framework-aware entry points for Next.js, Inngest, and Trigger.dev.
 
 ## Configuration
 
