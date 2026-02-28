@@ -1,5 +1,11 @@
 # treck
 
+## 0.2.2
+
+### Patch Changes
+
+- a2060b2: Rename project from piste to treck
+
 ## 0.2.1
 
 ### Patch Changes
