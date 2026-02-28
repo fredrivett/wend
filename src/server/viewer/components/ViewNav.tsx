@@ -35,7 +35,7 @@ export function ViewNav() {
 
   return (
     <div className="p-4 border-b border-gray-200">
-      <div className="font-bold text-sm mb-3 text-gray-900">wend</div>
+      <div className="font-bold text-sm mb-3 text-gray-900">piste</div>
       <div className="flex gap-1">
         <NavLink to="/" label="Graph" icon={Workflow} isActive={isGraph} />
         <NavLink to="/docs" label="Docs" icon={FileText} isActive={isDocs} />

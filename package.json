@@ -1,17 +1,17 @@
 {
-  "name": "wend",
+  "name": "piste",
   "version": "0.2.0",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "wend": "./dist/index.mjs"
+    "piste": "./dist/index.mjs"
   },
   "scripts": {
     "dev": "bash scripts/run.sh",
     "dev:cli": "tsdown src/cli/index.ts --watch",
     "build": "tsdown src/cli/index.ts && npm run build:viewer",
     "build:viewer": "vite build --config src/server/viewer/vite.config.ts",
-    "wend": "node dist/index.mjs",
+    "piste": "node dist/index.mjs",
     "test": "vitest",
     "test:extractor": "tsx scripts/test-extractor.ts",
     "format": "biome check --write .",

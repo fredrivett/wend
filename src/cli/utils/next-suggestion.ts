@@ -5,7 +5,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import picomatch from 'picomatch';
 import { TypeScriptExtractor } from '../../extractor/index.js';
-import type { WendConfig } from './config.js';
+import type { PisteConfig } from './config.js';
 
 export interface ProjectScan {
   sourceFiles: string[];
@@ -21,7 +21,7 @@ export interface ProjectScan {
 /**
  * Scan the project and return coverage data.
  */
-export function scanProject(outputDir: string, scope: WendConfig['scope']): ProjectScan {
+export function scanProject(outputDir: string, scope: PisteConfig['scope']): ProjectScan {
   const sourceFiles = findSourceFiles(process.cwd(), scope);
   const allSymbols: ProjectScan['allSymbols'] = [];
 
@@ -71,7 +71,7 @@ const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
  */
 export async function scanProjectAsync(
   outputDir: string,
-  scope: WendConfig['scope'],
+  scope: PisteConfig['scope'],
   onProgress?: (message: string) => void,
 ): Promise<ProjectScan> {
   // Phase 1: find source files (async fs, yields naturally at each I/O)
@@ -130,7 +130,7 @@ export async function scanProjectAsync(
  */
 async function findSourceFilesAsync(
   rootDir: string,
-  scope: WendConfig['scope'],
+  scope: PisteConfig['scope'],
 ): Promise<string[]> {
   const isIncluded = picomatch(scope.include);
   const isExcluded = picomatch(scope.exclude);
@@ -316,7 +316,7 @@ function gitTrackedFilesAsync(rootDir: string): Promise<string[] | null> {
  * @param rootDir - Root directory to search from
  * @param scope - Include and exclude glob patterns
  */
-export function findSourceFiles(rootDir: string, scope: WendConfig['scope']): string[] {
+export function findSourceFiles(rootDir: string, scope: PisteConfig['scope']): string[] {
   const isIncluded = picomatch(scope.include);
   const isExcluded = picomatch(scope.exclude);
 

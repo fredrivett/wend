@@ -10,7 +10,7 @@ export function getTemplate(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>wend</title>
+  <title>piste</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -451,7 +451,7 @@ export function getTemplate(): string {
   <div id="app">
     <aside id="sidebar">
       <div id="sidebar-header">
-        <h1>wend</h1>
+        <h1>piste</h1>
         <input type="text" id="search" placeholder="Search symbols...">
         <div class="tree-controls">
           <button id="collapse-all" title="Collapse all">Collapse all</button>
@@ -462,7 +462,7 @@ export function getTemplate(): string {
     </aside>
     <main id="main">
       <div id="welcome">
-        <h2>wend viewer</h2>
+        <h2>piste viewer</h2>
         <p>Select a symbol from the sidebar to view its documentation.</p>
       </div>
       <div id="doc-view" style="display:none"></div>
@@ -698,9 +698,9 @@ export function getTemplate(): string {
         html += '<div class="source-path">' + escapeHtml(doc.sourcePath) + '</div>';
       }
 
-      // Metadata (wend version, generated timestamp)
+      // Metadata (piste version, generated timestamp)
       const metaParts = [];
-      metaParts.push('<span>wend v' + (doc.wendVersion ? escapeHtml(doc.wendVersion) : ': unknown') + '</span>');
+      metaParts.push('<span>piste v' + (doc.pisteVersion ? escapeHtml(doc.pisteVersion) : ': unknown') + '</span>');
       if (doc.generated) {
         const date = new Date(doc.generated);
         const formatted = date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
