@@ -16,8 +16,8 @@ npm run build
 trap 'kill 0' EXIT
 
 npm run dev:cli &
-npm run piste -- serve --port "$API_PORT" --no-open &
-PISTE_API_PORT=$API_PORT npx vite dev --config src/server/viewer/vite.config.ts --port "$PORT" &
+npm run treck -- serve --port "$API_PORT" --no-open &
+TRECK_API_PORT=$API_PORT npx vite dev --config src/server/viewer/vite.config.ts --port "$PORT" &
 
 # Wait briefly for Vite to start, then open browser
 sleep 1

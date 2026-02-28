@@ -12,7 +12,7 @@ interface StatusOptions {
 }
 
 /**
- * Register the `piste status` CLI command.
+ * Register the `treck status` CLI command.
  *
  * Scans the project for JSDoc coverage and displays statistics
  * including a coverage bar and symbols missing JSDoc.
@@ -28,7 +28,7 @@ export function registerStatusCommand(cli: CAC) {
         // Load config
         const config = loadConfig();
         if (!config) {
-          p.cancel('Config not found. Run: piste init');
+          p.cancel('Config not found. Run: treck init');
           process.exit(1);
         }
 
@@ -54,7 +54,7 @@ export function registerStatusCommand(cli: CAC) {
           p.outro('Perfect JSDoc coverage!');
         } else {
           p.outro(
-            `${jsDocCoverage}% JSDoc coverage \u2014 run \x1b[1;36mpiste jsdoc\x1b[0m for next steps`,
+            `${jsDocCoverage}% JSDoc coverage \u2014 run \x1b[1;36mtreck jsdoc\x1b[0m for next steps`,
           );
         }
       } catch (error) {

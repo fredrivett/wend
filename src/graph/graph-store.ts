@@ -1,5 +1,5 @@
 /**
- * Reads and writes FlowGraph to _piste/graph.json
+ * Reads and writes FlowGraph to _treck/graph.json
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';

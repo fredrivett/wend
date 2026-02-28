@@ -3,8 +3,8 @@
 import { cac } from 'cac';
 import { version } from '../../package.json';
 
-/** The piste CLI instance, powered by cac. */
-const cli = cac('piste');
+/** The treck CLI instance, powered by cac. */
+const cli = cac('treck');
 
 // Global options
 cli.version(version).help();
@@ -27,7 +27,7 @@ registerStatusCommand(cli);
 /** Parsed CLI arguments and options. */
 const parsed = cli.parse();
 
-// Show help if no command was matched (e.g. "piste" or "piste help")
+// Show help if no command was matched (e.g. "treck" or "treck help")
 // but not when --help or --version was explicitly passed (cac handles those)
 if (!cli.matchedCommand && !parsed.options.help && !parsed.options.version) {
   cli.outputHelp();

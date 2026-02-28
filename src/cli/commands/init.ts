@@ -31,23 +31,23 @@ interface InitConfig {
 }
 
 /**
- * Register the `piste init` CLI command.
+ * Register the `treck init` CLI command.
  *
  * Runs an interactive setup wizard that prompts for output directory,
  * include/exclude patterns, and writes a `config.yaml` file.
  */
 export function registerInitCommand(cli: CAC) {
-  cli.command('init', 'Initialize piste in your project').action(async () => {
+  cli.command('init', 'Initialize treck in your project').action(async () => {
     // biome-ignore lint/suspicious/noConsole: intentional clear before init wizard
     console.clear();
 
-    p.intro('Welcome to piste');
+    p.intro('Welcome to treck');
 
     // Check if already initialized
-    const configPath = join(process.cwd(), '_piste', 'config.yaml');
+    const configPath = join(process.cwd(), '_treck', 'config.yaml');
     if (existsSync(configPath)) {
       const shouldOverwrite = await p.confirm({
-        message: 'piste is already initialized. Overwrite?',
+        message: 'treck is already initialized. Overwrite?',
         initialValue: false,
       });
 
@@ -60,8 +60,8 @@ export function registerInitCommand(cli: CAC) {
     // Gather configuration
     const outputDir = await p.text({
       message: 'Where should docs be generated?',
-      placeholder: '_piste',
-      initialValue: '_piste',
+      placeholder: '_treck',
+      initialValue: '_treck',
     });
 
     if (p.isCancel(outputDir)) {
@@ -182,7 +182,7 @@ export function registerInitCommand(cli: CAC) {
     s.stop('Configuration created!');
 
     p.note(
-      `Config saved to: ${outputDir}/config.yaml\n\nNext steps:\n  1. Run: piste sync\n  2. View: piste serve`,
+      `Config saved to: ${outputDir}/config.yaml\n\nNext steps:\n  1. Run: treck sync\n  2. View: treck serve`,
       'Setup complete!',
     );
 
@@ -228,8 +228,8 @@ function splitGlobPatterns(input: string): string[] {
 
 /** Serialize an init config object to a YAML config file string. */
 function generateConfigYAML(config: InitConfig): string {
-  return `# piste configuration
-# Learn more: https://github.com/fredrivett/piste
+  return `# treck configuration
+# Learn more: https://github.com/fredrivett/treck
 
 output:
   # Where generated documentation will be stored

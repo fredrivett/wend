@@ -8,7 +8,7 @@ import { loadConfig } from '../utils/config.js';
 import { findSourceFiles } from '../utils/next-suggestion.js';
 
 /**
- * Register the `piste sync` CLI command.
+ * Register the `treck sync` CLI command.
  *
  * Finds source files, builds the dependency graph, and writes graph.json.
  * Optionally filters to a target path.
@@ -16,15 +16,15 @@ import { findSourceFiles } from '../utils/next-suggestion.js';
 export function registerSyncCommand(cli: CAC) {
   cli
     .command('sync [target]', 'Build dependency graph')
-    .example('piste sync')
-    .example('piste sync src/api/')
+    .example('treck sync')
+    .example('treck sync src/api/')
     .action(async (target?: string) => {
       p.intro('Syncing documentation');
 
       try {
         const config = loadConfig();
         if (!config) {
-          p.cancel('Config not found. Run: piste init');
+          p.cancel('Config not found. Run: treck init');
           process.exit(1);
         }
 
@@ -54,7 +54,7 @@ export function registerSyncCommand(cli: CAC) {
         if (sourceFiles.length === 0 && !target) {
           if (config.scope.include.length === 0) {
             p.log.warn(
-              'No include patterns configured.\nCheck scope.include in _piste/config.yaml',
+              'No include patterns configured.\nCheck scope.include in _treck/config.yaml',
             );
           } else {
             p.log.warn(

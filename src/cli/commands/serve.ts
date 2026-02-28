@@ -4,7 +4,7 @@ import type { CAC } from 'cac';
 import picomatch from 'picomatch';
 import type { FlowGraph } from '../../graph/types.js';
 import { startServer } from '../../server/index.js';
-import { loadConfig, type PisteConfig } from '../utils/config.js';
+import { loadConfig, type TreckConfig } from '../utils/config.js';
 
 interface ServeOptions {
   port?: number;
@@ -57,10 +57,10 @@ function resolveFocusTargets(
  * by include patterns, or matched by exclude patterns).
  *
  * @param filePath - The file path portion of the unresolved target
- * @param config - The loaded piste config with scope patterns
+ * @param config - The loaded treck config with scope patterns
  * @returns Human-readable reason, or null if the cause is unclear
  */
-function explainUnresolved(filePath: string, config: PisteConfig): string | null {
+function explainUnresolved(filePath: string, config: TreckConfig): string | null {
   const isIncluded = config.scope.include.some((pattern) => picomatch(pattern)(filePath));
   if (!isIncluded) {
     return `not matched by scope.include: ${config.scope.include.join(', ')}`;
@@ -75,7 +75,7 @@ function explainUnresolved(filePath: string, config: PisteConfig): string | null
 }
 
 /**
- * Register the `piste serve` CLI command.
+ * Register the `treck serve` CLI command.
  *
  * Starts the documentation viewer HTTP server and optionally opens it
  * in the default browser. Supports `--focus` to open with specific
@@ -87,15 +87,15 @@ export function registerServeCommand(cli: CAC) {
     .option('--port <number>', 'Port to run server on (default: 3456)')
     .option('--open', 'Auto-open browser (default: true)')
     .option('--focus <targets>', 'Focus on file:symbol or file (comma-separated)')
-    .example('piste serve')
-    .example('piste serve --port 8080')
-    .example('piste serve --focus src/api/route.ts:GET,src/lib/db.ts:query')
+    .example('treck serve')
+    .example('treck serve --port 8080')
+    .example('treck serve --focus src/api/route.ts:GET,src/lib/db.ts:query')
     .action(async (options: ServeOptions) => {
-      p.intro('piste viewer');
+      p.intro('treck viewer');
 
       const config = loadConfig();
       if (!config) {
-        p.cancel('Config not found. Run: piste init');
+        p.cancel('Config not found. Run: treck init');
         process.exit(1);
       }
 
@@ -112,7 +112,7 @@ export function registerServeCommand(cli: CAC) {
         let openUrl = url;
         if (options.focus && options.focus.length > 0) {
           if (!graph) {
-            p.cancel('No graph data available. Run: piste sync');
+            p.cancel('No graph data available. Run: treck sync');
             process.exit(1);
           }
 

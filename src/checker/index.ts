@@ -26,7 +26,7 @@ export class StaleChecker {
    * Reads graph.json from the output directory, then for each node compares
    * the stored hash against a freshly computed hash from source.
    *
-   * @param outputDir - Path to the piste output directory (e.g. `_piste`)
+   * @param outputDir - Path to the treck output directory (e.g. `_treck`)
    */
   checkGraph(outputDir: string): CheckResult {
     const result: CheckResult = {
@@ -40,7 +40,7 @@ export class StaleChecker {
     const graph = store.read();
 
     if (!graph) {
-      result.errors.push(`Graph not found in ${outputDir}. Run: piste sync`);
+      result.errors.push(`Graph not found in ${outputDir}. Run: treck sync`);
       return result;
     }
 

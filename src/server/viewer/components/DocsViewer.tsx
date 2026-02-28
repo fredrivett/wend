@@ -9,7 +9,7 @@ interface DocData {
   name: string;
   sourcePath: string;
   markdown: string;
-  pisteVersion?: string;
+  treckVersion?: string;
   generated?: string;
   dependencyGraph?: string;
   related?: Array<{ name: string; docPath: string | null }>;
@@ -126,7 +126,7 @@ export function DocsViewer() {
   if (!docPath) {
     return (
       <div className="flex flex-col items-center justify-center h-full font-sans text-gray-500 gap-2">
-        <div className="font-semibold text-base">piste viewer</div>
+        <div className="font-semibold text-base">treck viewer</div>
         <div className="text-sm">Select a symbol from the sidebar to view its documentation.</div>
       </div>
     );
@@ -145,7 +145,7 @@ export function DocsViewer() {
       <div className="flex flex-col items-center justify-center h-full font-sans text-gray-500 gap-2">
         <div className="font-semibold text-base">Document not found</div>
         <div className="text-sm">
-          Run <code className="bg-gray-100 px-1.5 rounded">piste sync</code> to generate
+          Run <code className="bg-gray-100 px-1.5 rounded">treck sync</code> to generate
           documentation.
         </div>
       </div>
@@ -206,7 +206,7 @@ export function DocsViewer() {
   if (doc.isAsync) badges.push({ variant: 'async', label: 'async' });
 
   const metaParts: string[] = [];
-  metaParts.push(`piste v${doc.pisteVersion ? escapeHtml(doc.pisteVersion) : ': unknown'}`);
+  metaParts.push(`treck v${doc.treckVersion ? escapeHtml(doc.treckVersion) : ': unknown'}`);
   if (doc.generated) {
     const date = new Date(doc.generated);
     const formatted = `${date.toLocaleDateString(undefined, {

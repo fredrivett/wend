@@ -6,7 +6,7 @@ import { StaleChecker } from '../../checker/index.js';
 import { loadConfig } from '../utils/config.js';
 
 /**
- * Register the `piste check` CLI command.
+ * Register the `treck check` CLI command.
  *
  * Checks graph.json freshness by comparing stored hashes against current
  * source code. Exits with code 1 if any stale nodes are found (useful for CI).
@@ -19,7 +19,7 @@ export function registerCheckCommand(cli: CAC) {
       // Load config
       const config = loadConfig();
       if (!config) {
-        p.cancel('Config not found. Run: piste init');
+        p.cancel('Config not found. Run: treck init');
         process.exit(1);
       }
 
@@ -67,7 +67,7 @@ export function registerCheckCommand(cli: CAC) {
         }
         p.log.message(lines.join('\n'));
 
-        p.log.message('Run piste sync to update.');
+        p.log.message('Run treck sync to update.');
       }
 
       p.outro(

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export interface PisteConfig {
+export interface TreckConfig {
   outputDir: string;
   scope: {
     include: string[];
@@ -10,21 +10,21 @@ export interface PisteConfig {
 }
 
 /**
- * Load the piste configuration from `_piste/config.yaml`.
+ * Load the treck configuration from `_treck/config.yaml`.
  *
  * Parses the YAML config file to extract the output directory and
  * include/exclude scope patterns. Returns null if no config file exists.
  *
  * @param cwd - Working directory to resolve the config path from
  */
-export function loadConfig(cwd = process.cwd()): PisteConfig | null {
-  const configPath = resolve(cwd, '_piste/config.yaml');
+export function loadConfig(cwd = process.cwd()): TreckConfig | null {
+  const configPath = resolve(cwd, '_treck/config.yaml');
   if (!existsSync(configPath)) return null;
 
   const content = readFileSync(configPath, 'utf-8');
 
   const dirMatch = content.match(/^\s*dir:\s*(.+)/m);
-  const outputDir = dirMatch ? stripQuotes(dirMatch[1].trim()) : '_piste';
+  const outputDir = dirMatch ? stripQuotes(dirMatch[1].trim()) : '_treck';
 
   const include = parseYamlList(content, 'include');
   const exclude = parseYamlList(content, 'exclude');
