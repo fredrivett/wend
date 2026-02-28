@@ -1,10 +1,10 @@
 # treck
 
-> _treck_ (n.) a ski run of compacted snow
+Your codebase, visualised.
 
-Find the way through your code.
+Evergreen maps of every code flow. Always in sync.
 
-Treck maps how your codebase connects — every function, every call, every path between them.
+From button click, to API call, to background task, to database update — trace the whole flow end-to-end.
 
 ## Quick Start
 
