@@ -1,17 +1,17 @@
 /**
- * Custom error classes for wend CLI
+ * Custom error classes for piste CLI
  */
 
-/** Base error class for all wend errors. */
-export class WendError extends Error {
+/** Base error class for all piste errors. */
+export class PisteError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'WendError';
+    this.name = 'PisteError';
   }
 }
 
-/** Thrown when the wend configuration file is invalid or missing required fields. */
-export class ConfigError extends WendError {
+/** Thrown when the piste configuration file is invalid or missing required fields. */
+export class ConfigError extends PisteError {
   constructor(message: string) {
     super(message);
     this.name = 'ConfigError';
@@ -19,7 +19,7 @@ export class ConfigError extends WendError {
 }
 
 /** Thrown when input validation fails (e.g. invalid file paths or symbol names). */
-export class ValidationError extends WendError {
+export class ValidationError extends PisteError {
   constructor(message: string) {
     super(message);
     this.name = 'ValidationError';
@@ -27,7 +27,7 @@ export class ValidationError extends WendError {
 }
 
 /** Thrown when symbol extraction from a source file fails. */
-export class ExtractionError extends WendError {
+export class ExtractionError extends PisteError {
   constructor(message: string) {
     super(message);
     this.name = 'ExtractionError';
@@ -35,7 +35,7 @@ export class ExtractionError extends WendError {
 }
 
 /** Thrown when documentation generation fails for a symbol. */
-export class GenerationError extends WendError {
+export class GenerationError extends PisteError {
   constructor(message: string) {
     super(message);
     this.name = 'GenerationError';

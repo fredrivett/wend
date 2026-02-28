@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 function createTempProject(): string {
-  const projectDir = mkdtempSync(join(tmpdir(), 'wend-detect-'));
+  const projectDir = mkdtempSync(join(tmpdir(), 'piste-detect-'));
   tempDirs.push(projectDir);
   return projectDir;
 }

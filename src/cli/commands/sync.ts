@@ -8,7 +8,7 @@ import { loadConfig } from '../utils/config.js';
 import { findSourceFiles } from '../utils/next-suggestion.js';
 
 /**
- * Register the `wend sync` CLI command.
+ * Register the `piste sync` CLI command.
  *
  * Finds source files, builds the dependency graph, and writes graph.json.
  * Optionally filters to a target path.
@@ -16,15 +16,15 @@ import { findSourceFiles } from '../utils/next-suggestion.js';
 export function registerSyncCommand(cli: CAC) {
   cli
     .command('sync [target]', 'Build dependency graph')
-    .example('wend sync')
-    .example('wend sync src/api/')
+    .example('piste sync')
+    .example('piste sync src/api/')
     .action(async (target?: string) => {
       p.intro('Syncing documentation');
 
       try {
         const config = loadConfig();
         if (!config) {
-          p.cancel('Config not found. Run: wend init');
+          p.cancel('Config not found. Run: piste init');
           process.exit(1);
         }
 
@@ -53,7 +53,7 @@ export function registerSyncCommand(cli: CAC) {
 
         if (sourceFiles.length === 0 && !target) {
           if (config.scope.include.length === 0) {
-            p.log.warn('No include patterns configured.\nCheck scope.include in _wend/config.yaml');
+            p.log.warn('No include patterns configured.\nCheck scope.include in _piste/config.yaml');
           } else {
             p.log.warn(
               `No files matched include patterns:\n${config.scope.include.map((pat) => `  - ${pat}`).join('\n')}\n\nCheck that your config matches your project structure.`,

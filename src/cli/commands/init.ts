@@ -31,23 +31,23 @@ interface InitConfig {
 }
 
 /**
- * Register the `wend init` CLI command.
+ * Register the `piste init` CLI command.
  *
  * Runs an interactive setup wizard that prompts for output directory,
  * include/exclude patterns, and writes a `config.yaml` file.
  */
 export function registerInitCommand(cli: CAC) {
-  cli.command('init', 'Initialize wend in your project').action(async () => {
+  cli.command('init', 'Initialize piste in your project').action(async () => {
     // biome-ignore lint/suspicious/noConsole: intentional clear before init wizard
     console.clear();
 
-    p.intro('Welcome to wend');
+    p.intro('Welcome to piste');
 
     // Check if already initialized
-    const configPath = join(process.cwd(), '_wend', 'config.yaml');
+    const configPath = join(process.cwd(), '_piste', 'config.yaml');
     if (existsSync(configPath)) {
       const shouldOverwrite = await p.confirm({
-        message: 'wend is already initialized. Overwrite?',
+        message: 'piste is already initialized. Overwrite?',
         initialValue: false,
       });
 
@@ -60,8 +60,8 @@ export function registerInitCommand(cli: CAC) {
     // Gather configuration
     const outputDir = await p.text({
       message: 'Where should docs be generated?',
-      placeholder: '_wend',
-      initialValue: '_wend',
+      placeholder: '_piste',
+      initialValue: '_piste',
     });
 
     if (p.isCancel(outputDir)) {
@@ -182,7 +182,7 @@ export function registerInitCommand(cli: CAC) {
     s.stop('Configuration created!');
 
     p.note(
-      `Config saved to: ${outputDir}/config.yaml\n\nNext steps:\n  1. Run: wend sync\n  2. View: wend serve`,
+      `Config saved to: ${outputDir}/config.yaml\n\nNext steps:\n  1. Run: piste sync\n  2. View: piste serve`,
       'Setup complete!',
     );
 
@@ -228,8 +228,8 @@ function splitGlobPatterns(input: string): string[] {
 
 /** Serialize an init config object to a YAML config file string. */
 function generateConfigYAML(config: InitConfig): string {
-  return `# wend configuration
-# Learn more: https://github.com/fredrivett/wend
+  return `# piste configuration
+# Learn more: https://github.com/fredrivett/piste
 
 output:
   # Where generated documentation will be stored

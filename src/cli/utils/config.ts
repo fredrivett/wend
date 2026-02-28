@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export interface WendConfig {
+export interface PisteConfig {
   outputDir: string;
   scope: {
     include: string[];
@@ -10,21 +10,21 @@ export interface WendConfig {
 }
 
 /**
- * Load the wend configuration from `_wend/config.yaml`.
+ * Load the piste configuration from `_piste/config.yaml`.
  *
  * Parses the YAML config file to extract the output directory and
  * include/exclude scope patterns. Returns null if no config file exists.
  *
  * @param cwd - Working directory to resolve the config path from
  */
-export function loadConfig(cwd = process.cwd()): WendConfig | null {
-  const configPath = resolve(cwd, '_wend/config.yaml');
+export function loadConfig(cwd = process.cwd()): PisteConfig | null {
+  const configPath = resolve(cwd, '_piste/config.yaml');
   if (!existsSync(configPath)) return null;
 
   const content = readFileSync(configPath, 'utf-8');
 
   const dirMatch = content.match(/^\s*dir:\s*(.+)/m);
-  const outputDir = dirMatch ? stripQuotes(dirMatch[1].trim()) : '_wend';
+  const outputDir = dirMatch ? stripQuotes(dirMatch[1].trim()) : '_piste';
 
   const include = parseYamlList(content, 'include');
   const exclude = parseYamlList(content, 'exclude');

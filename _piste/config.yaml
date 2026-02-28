@@ -1,9 +1,9 @@
-# wend configuration
-# Learn more: https://github.com/fredrivett/wend
+# piste configuration
+# Learn more: https://github.com/fredrivett/piste
 
 output:
   # Where generated documentation will be stored
-  dir: _wend
+  dir: _piste
 
 scope:
   # Files to include in documentation

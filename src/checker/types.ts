@@ -11,7 +11,7 @@ export interface DocDependency {
 
 export interface DocMetadata {
   title: string;
-  wendVersion?: string;
+  pisteVersion?: string;
   generated: string;
   dependencies: DocDependency[];
   // Badge / symbol metadata

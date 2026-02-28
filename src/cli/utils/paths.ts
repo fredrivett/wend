@@ -1,7 +1,7 @@
 /**
  * Path resolution utilities for working across git worktrees.
  *
- * When wend runs in a git worktree (e.g. via Conductor), source file paths
+ * When piste runs in a git worktree (e.g. via Conductor), source file paths
  * stored in doc frontmatter may point to the main worktree. These utilities
  * resolve those paths to work in any worktree.
  */

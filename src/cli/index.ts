@@ -3,8 +3,8 @@
 import { cac } from 'cac';
 import { version } from '../../package.json';
 
-/** The wend CLI instance, powered by cac. */
-const cli = cac('wend');
+/** The piste CLI instance, powered by cac. */
+const cli = cac('piste');
 
 // Global options
 cli.version(version).help();
@@ -27,7 +27,7 @@ registerStatusCommand(cli);
 /** Parsed CLI arguments and options. */
 const parsed = cli.parse();
 
-// Show help if no command was matched (e.g. "wend" or "wend help")
+// Show help if no command was matched (e.g. "piste" or "piste help")
 // but not when --help or --version was explicitly passed (cac handles those)
 if (!cli.matchedCommand && !parsed.options.help && !parsed.options.version) {
   cli.outputHelp();
