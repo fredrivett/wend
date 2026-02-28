@@ -1,86 +1,86 @@
-# piste
+# treck
 
-> _piste_ (n.) a ski run of compacted snow
+> _treck_ (n.) a ski run of compacted snow
 
 Find the way through your code.
 
-Piste maps how your codebase connects — every function, every call, every path between them.
+Treck maps how your codebase connects — every function, every call, every path between them.
 
 ## Quick Start
 
 ```bash
-npm install piste
+npm install treck
 ```
 
-Initialize piste in your project (interactive wizard):
+Initialize treck in your project (interactive wizard):
 
 ```bash
-npx piste init
+npx treck init
 ```
 
 Build the graph:
 
 ```bash
-npx piste sync
+npx treck sync
 ```
 
 ## Commands
 
-### `piste init`
+### `treck init`
 
-Initialize piste in your project. Creates a `_piste/config.yaml` with your preferred output directory and file scope.
+Initialize treck in your project. Creates a `_treck/config.yaml` with your preferred output directory and file scope.
 
-### `piste sync [target]`
+### `treck sync [target]`
 
 Build the dependency graph. Analyzes all source files, extracts symbols and their relationships, and writes `graph.json`.
 
 ```bash
-piste sync              # sync all files in scope
-piste sync src/api/     # sync only files under src/api/
+treck sync              # sync all files in scope
+treck sync src/api/     # sync only files under src/api/
 ```
 
-### `piste check`
+### `treck check`
 
 Check graph freshness. Compares current code hashes against the hashes stored in `graph.json` and reports any that are out of sync. Returns exit code 1 if stale nodes are found (CI-friendly).
 
 ```bash
-piste check        # report stale nodes
+treck check        # report stale nodes
 ```
 
-### `piste status [--verbose]`
+### `treck status [--verbose]`
 
 Show JSDoc coverage for your project.
 
 ```bash
-piste status            # coverage summary
-piste status --verbose  # include full list of symbols missing JSDoc
+treck status            # coverage summary
+treck status --verbose  # include full list of symbols missing JSDoc
 ```
 
-### `piste serve [--port <number>]`
+### `treck serve [--port <number>]`
 
 Start an interactive documentation viewer in your browser. Displays a flow graph of your codebase with clickable nodes that open symbol documentation in a side panel.
 
 ```bash
-piste serve              # default port 3456
-piste serve --port 8080
+treck serve              # default port 3456
+treck serve --port 8080
 ```
 
 ## How it works
 
-1. **Map** — Piste walks your source files and finds every symbol: functions, classes, handlers, tasks
+1. **Map** — Treck walks your source files and finds every symbol: functions, classes, handlers, tasks
 2. **Connect** — It traces the calls between them, building a graph of how everything fits together
-3. **Detect** — Each symbol is hashed, so when code changes, piste knows exactly what's gone stale
+3. **Detect** — Each symbol is hashed, so when code changes, treck knows exactly what's gone stale
 4. **Explore** — Browse the graph in an interactive viewer, or check freshness in CI
 
 Currently supports TypeScript and JavaScript, with framework-aware entry points for Next.js, Inngest, and Trigger.dev.
 
 ## Configuration
 
-`_piste/config.yaml`:
+`_treck/config.yaml`:
 
 ```yaml
 output:
-  dir: _piste
+  dir: _treck
 
 scope:
   include:
@@ -101,8 +101,8 @@ scope:
 ## Contributing
 
 ```bash
-git clone https://github.com/fredrivett/piste
-cd piste
+git clone https://github.com/fredrivett/treck
+cd treck
 npm install
 ```
 

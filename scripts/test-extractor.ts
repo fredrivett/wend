@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 /**
- * Quick script to test the symbol extractor on piste's own code
+ * Quick script to test the symbol extractor on treck's own code
  */
 
 import { join } from 'node:path';

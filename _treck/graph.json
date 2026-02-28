@@ -83,7 +83,7 @@
         6,
         91
       ],
-      "description": "Register the `piste check` CLI command.\n\nScans all generated docs for staleness by comparing source code hashes\nagainst the hashes stored in doc frontmatter. Exits with code 1 if any\nstale docs are found (useful for CI).",
+      "description": "Register the `treck check` CLI command.\n\nScans all generated docs for staleness by comparing source code hashes\nagainst the hashes stored in doc frontmatter. Exits with code 1 if any\nstale docs are found (useful for CI).",
       "structuredParams": [
         {
           "name": "cli",
@@ -151,7 +151,7 @@
         16,
         122
       ],
-      "description": "Register the `piste init` CLI command.\n\nRuns an interactive setup wizard that prompts for output directory,\ninclude/exclude patterns, and writes a `config.yaml` file.",
+      "description": "Register the `treck init` CLI command.\n\nRuns an interactive setup wizard that prompts for output directory,\ninclude/exclude patterns, and writes a `config.yaml` file.",
       "structuredParams": [
         {
           "name": "cli",
@@ -219,7 +219,7 @@
         10,
         64
       ],
-      "description": "Register the `piste serve` CLI command.\n\nStarts the documentation viewer HTTP server and optionally opens it\nin the default browser.",
+      "description": "Register the `treck serve` CLI command.\n\nStarts the documentation viewer HTTP server and optionally opens it\nin the default browser.",
       "structuredParams": [
         {
           "name": "cli",
@@ -241,7 +241,7 @@
         14,
         107
       ],
-      "description": "Register the `piste status` CLI command.\n\nScans the project for documentation coverage and displays statistics\nincluding a coverage bar, undocumented symbols, and a suggestion for\nthe next file to document.",
+      "description": "Register the `treck status` CLI command.\n\nScans the project for documentation coverage and displays statistics\nincluding a coverage bar, undocumented symbols, and a suggestion for\nthe next file to document.",
       "structuredParams": [
         {
           "name": "cli",
@@ -263,7 +263,7 @@
         9,
         141
       ],
-      "description": "Register the `piste sync` CLI command.\n\nFinds source files, builds the dependency graph, and generates static\nmarkdown documentation for every node. Optionally filters to a target path.",
+      "description": "Register the `treck sync` CLI command.\n\nFinds source files, builds the dependency graph, and generates static\nmarkdown documentation for every node. Optionally filters to a target path.",
       "structuredParams": [
         {
           "name": "cli",
@@ -285,7 +285,7 @@
         7,
         7
       ],
-      "description": "The piste CLI instance, powered by cac.",
+      "description": "The treck CLI instance, powered by cac.",
       "isExported": false
     },
     {
@@ -313,7 +313,7 @@
         10,
         36
       ],
-      "description": "Load the piste configuration from `_piste/config.yaml`.\n\nParses the YAML config file to extract the output directory and\ninclude/exclude scope patterns. Returns null if no config file exists.",
+      "description": "Load the treck configuration from `_treck/config.yaml`.\n\nParses the YAML config file to extract the output directory and\ninclude/exclude scope patterns. Returns null if no config file exists.",
       "structuredParams": [
         {
           "name": "cwd",
@@ -324,7 +324,7 @@
           "description": "Working directory to resolve the config path from"
         }
       ],
-      "returnType": "PisteConfig | null",
+      "returnType": "TreckConfig | null",
       "isExported": true
     },
     {
@@ -503,8 +503,8 @@
       "isExported": false
     },
     {
-      "id": "src/cli/utils/errors.ts:PisteError",
-      "name": "PisteError",
+      "id": "src/cli/utils/errors.ts:TreckError",
+      "name": "TreckError",
       "kind": "class",
       "filePath": "src/cli/utils/errors.ts",
       "isAsync": false,
@@ -513,7 +513,7 @@
         1,
         11
       ],
-      "description": "Base error class for all piste errors.",
+      "description": "Base error class for all treck errors.",
       "isExported": true
     },
     {
@@ -527,7 +527,7 @@
         11,
         19
       ],
-      "description": "Thrown when the piste configuration file is invalid or missing required fields.",
+      "description": "Thrown when the treck configuration file is invalid or missing required fields.",
       "isExported": true
     },
     {
@@ -639,7 +639,7 @@
         },
         {
           "name": "scope",
-          "type": "PisteConfig['scope']",
+          "type": "TreckConfig['scope']",
           "isOptional": false,
           "isRest": false
         }
@@ -682,7 +682,7 @@
         },
         {
           "name": "scope",
-          "type": "PisteConfig['scope']",
+          "type": "TreckConfig['scope']",
           "isOptional": false,
           "isRest": false
         },
@@ -717,7 +717,7 @@
         },
         {
           "name": "scope",
-          "type": "PisteConfig['scope']",
+          "type": "TreckConfig['scope']",
           "isOptional": false,
           "isRest": false
         }
@@ -790,7 +790,7 @@
         },
         {
           "name": "scope",
-          "type": "PisteConfig['scope']",
+          "type": "TreckConfig['scope']",
           "isOptional": false,
           "isRest": false
         }
@@ -843,7 +843,7 @@
         },
         {
           "name": "scope",
-          "type": "PisteConfig['scope']",
+          "type": "TreckConfig['scope']",
           "isOptional": false,
           "isRest": false,
           "description": "Include and exclude glob patterns"
@@ -2133,7 +2133,7 @@
           "type": "string",
           "isOptional": false,
           "isRest": false,
-          "description": "Path to the piste output directory"
+          "description": "Path to the treck output directory"
         }
       ],
       "returnType": "SymbolIndex",
@@ -2321,7 +2321,7 @@
           "type": "string",
           "isOptional": false,
           "isRest": false,
-          "description": "Path to the piste output directory"
+          "description": "Path to the treck output directory"
         }
       ],
       "isExported": false
@@ -2368,14 +2368,14 @@
         277,
         408
       ],
-      "description": "Start the piste documentation viewer HTTP server.\n\nServes the single-page viewer app, a JSON API for the symbol index and\nindividual doc pages, and the graph data. Watches the output directory\nfor changes and rebuilds the index automatically.\n\nIf the requested port is taken, retries up to 10 consecutive ports.",
+      "description": "Start the treck documentation viewer HTTP server.\n\nServes the single-page viewer app, a JSON API for the symbol index and\nindividual doc pages, and the graph data. Watches the output directory\nfor changes and rebuilds the index automatically.\n\nIf the requested port is taken, retries up to 10 consecutive ports.",
       "structuredParams": [
         {
           "name": "outputDir",
           "type": "string",
           "isOptional": false,
           "isRest": false,
-          "description": "Path to the piste output directory (e.g. `_piste`)"
+          "description": "Path to the treck output directory (e.g. `_treck`)"
         },
         {
           "name": "port",

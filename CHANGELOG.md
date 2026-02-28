@@ -1,16 +1,16 @@
-# piste
+# treck
 
 ## 0.2.1
 
 ### Patch Changes
 
-- 2a74df7: rename: wend → piste
+- 2a74df7: rename: wend → treck
 
 ## 0.2.0
 
 ### Minor Changes
 
-- db67f49: Drop per-symbol markdown file generation entirely. `graph.json` is now the sole output. Markdown rendering is done on-the-fly by the server from graph data instead of from pre-written files on disk. This removes `StaticDocGenerator`, `DocParser`, and the entire `_piste/` directory, and updates the checker and CLI commands to work with graph nodes directly.
+- db67f49: Drop per-symbol markdown file generation entirely. `graph.json` is now the sole output. Markdown rendering is done on-the-fly by the server from graph data instead of from pre-written files on disk. This removes `StaticDocGenerator`, `DocParser`, and the entire `_treck/` directory, and updates the checker and CLI commands to work with graph nodes directly.
 
 ### Patch Changes
 
@@ -23,7 +23,7 @@
 - 15f3145: Exclude gitignored files from source scanning by using `git ls-files` instead of manual directory walking. Generated code (e.g. Prisma clients) no longer appears in JSDoc coverage reports.
 - 3d61e7c: Improve CLI setup and sync behavior for real-world project layouts.
 
-  `piste init` now auto-detects common source directories and suggests matching include patterns. `piste sync` now warns clearly when include patterns match zero files. YAML config parsing is more robust for commented include/exclude lists.
+  `treck init` now auto-detects common source directories and suggests matching include patterns. `treck sync` now warns clearly when include patterns match zero files. YAML config parsing is more robust for commented include/exclude lists.
 
 - 8b212b1: Fix parameter table rendering and destructured parameter extraction
 
@@ -33,9 +33,9 @@
 - 4f15a05: Add graph-based flow visualisation with interactive viewer, config scope filtering, and auto-retry server port
 - d6a3a25: Enhance graph viewer with snap-to-grid layout, interactive layout settings, node type filtering, bidirectional highlighting, and loading spinner. Fix trigger.dev matcher for TypeScript generics and TypeScript extractor for call expression initializers. Update CLI hints to reference sync command.
 - 02f7b7d: Improve contrast of subgraph headers and edge labels in mermaid diagrams by adjusting CSS custom properties for better legibility
-- fcf911e: Add piste jsdoc command and missing-JSDoc viewer banner
+- fcf911e: Add treck jsdoc command and missing-JSDoc viewer banner
 
-  Introduces a new `piste jsdoc` CLI command with `--run`, `--prompt`, and `--verbose` modes to help surface and fix missing JSDoc comments. Extracts `renderMissingJsDocList` helper for reuse across commands, updates the status outro logic to distinguish between doc and JSDoc coverage, and moves missing-JSDoc warnings from static generated markdown to the viewer UI via a new `MissingJsDocBanner` component with inline agent prompt guidance.
+  Introduces a new `treck jsdoc` CLI command with `--run`, `--prompt`, and `--verbose` modes to help surface and fix missing JSDoc comments. Extracts `renderMissingJsDocList` helper for reuse across commands, updates the status outro logic to distinguish between doc and JSDoc coverage, and moves missing-JSDoc warnings from static generated markdown to the viewer UI via a new `MissingJsDocBanner` component with inline agent prompt guidance.
 
 - 88b982d: Add JSDoc coverage stats to CLI and docs viewer
 
@@ -80,4 +80,4 @@
 - 441ae47: Enable automatic npm publishing when changesets release PR is merged
 - 8c5087d: Fix status command spinner by using async file I/O and yielding during symbol extraction so the loading animation stays smooth
 - 9f86a7f: Fix symbol overcounting by excluding dot-directories and common build output directories from source file discovery
-- 87f178b: Auto-expand Visual Flow section in serve viewer and show piste version and generated timestamp in doc metadata
+- 87f178b: Auto-expand Visual Flow section in serve viewer and show treck version and generated timestamp in doc metadata

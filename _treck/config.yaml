@@ -1,9 +1,9 @@
-# piste configuration
-# Learn more: https://github.com/fredrivett/piste
+# treck configuration
+# Learn more: https://github.com/fredrivett/treck
 
 output:
   # Where generated documentation will be stored
-  dir: _piste
+  dir: _treck
 
 scope:
   # Files to include in documentation

@@ -1,17 +1,17 @@
 /**
- * Custom error classes for piste CLI
+ * Custom error classes for treck CLI
  */
 
-/** Base error class for all piste errors. */
-export class PisteError extends Error {
+/** Base error class for all treck errors. */
+export class TreckError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'PisteError';
+    this.name = 'TreckError';
   }
 }
 
-/** Thrown when the piste configuration file is invalid or missing required fields. */
-export class ConfigError extends PisteError {
+/** Thrown when the treck configuration file is invalid or missing required fields. */
+export class ConfigError extends TreckError {
   constructor(message: string) {
     super(message);
     this.name = 'ConfigError';
@@ -19,7 +19,7 @@ export class ConfigError extends PisteError {
 }
 
 /** Thrown when input validation fails (e.g. invalid file paths or symbol names). */
-export class ValidationError extends PisteError {
+export class ValidationError extends TreckError {
   constructor(message: string) {
     super(message);
     this.name = 'ValidationError';
@@ -27,7 +27,7 @@ export class ValidationError extends PisteError {
 }
 
 /** Thrown when symbol extraction from a source file fails. */
-export class ExtractionError extends PisteError {
+export class ExtractionError extends TreckError {
   constructor(message: string) {
     super(message);
     this.name = 'ExtractionError';
@@ -35,7 +35,7 @@ export class ExtractionError extends PisteError {
 }
 
 /** Thrown when documentation generation fails for a symbol. */
-export class GenerationError extends PisteError {
+export class GenerationError extends TreckError {
   constructor(message: string) {
     super(message);
     this.name = 'GenerationError';

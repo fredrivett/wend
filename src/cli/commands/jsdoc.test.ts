@@ -11,9 +11,9 @@ describe('JSDOC_AGENT_PROMPT', () => {
     expect(JSDOC_AGENT_PROMPT).toContain('## Important');
   });
 
-  it('references the piste jsdoc command', () => {
-    expect(JSDOC_AGENT_PROMPT).toContain('npx piste jsdoc');
-    expect(JSDOC_AGENT_PROMPT).toContain('npx piste jsdoc --verbose');
+  it('references the treck jsdoc command', () => {
+    expect(JSDOC_AGENT_PROMPT).toContain('npx treck jsdoc');
+    expect(JSDOC_AGENT_PROMPT).toContain('npx treck jsdoc --verbose');
   });
 
   it('includes style guidance for @param without types', () => {
