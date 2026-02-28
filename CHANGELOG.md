@@ -1,5 +1,11 @@
 # piste
 
+## 0.2.1
+
+### Patch Changes
+
+- 2a74df7: rename: wend → piste
+
 ## 0.2.0
 
 ### Minor Changes
