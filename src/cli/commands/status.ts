@@ -36,7 +36,7 @@ export function registerStatusCommand(cli: CAC) {
         const spinner = p.spinner();
         spinner.start('Finding source files');
 
-        const scan = await scanProjectAsync(config.outputDir, config.scope, (message) => {
+        const scan = await scanProjectAsync(config.scope, (message) => {
           spinner.message(message);
         });
 
