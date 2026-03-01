@@ -7,7 +7,7 @@ import { resolveSourcePath } from '../cli/utils/paths.js';
 import { TypeScriptExtractor } from '../extractor/index.js';
 import { GraphStore } from '../graph/graph-store.js';
 import { ContentHasher } from '../hasher/index.js';
-import type { CheckResult, StaleDependency, StaleDoc } from './types.js';
+import type { CheckResult } from './types.js';
 
 /** Detects when graph.json is out of sync with source code by comparing content hashes. */
 export class StaleChecker {
