@@ -8,9 +8,9 @@
 
 import { relative } from 'node:path';
 import { isTrivialBody } from '../cli/utils/next-suggestion.js';
-import { TypeScriptExtractor } from '../extractor/index.js';
-import { resolveImportPath } from '../extractor/resolve-import.js';
-import type { CallSite, ImportInfo, SymbolInfo } from '../extractor/types.js';
+import { resolveImportPath } from '../extractors/resolve-import/index.js';
+import type { CallSite, ImportInfo, SymbolInfo } from '../extractors/types.js';
+import { TypeScriptExtractor } from '../extractors/typescript/index.js';
 import { ContentHasher } from '../hasher/index.js';
 import { matchers } from '../matchers/index.js';
 import type { RuntimeConnection } from '../matchers/types.js';
