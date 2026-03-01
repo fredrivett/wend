@@ -65,7 +65,8 @@ describe('StaleChecker', () => {
       // Extract and hash to get correct hash
       const extractor = new TypeScriptExtractor();
       const hasher = new ContentHasher();
-      const symbol = extractor.extractSymbol(sourcePath, 'add')!;
+      const symbol = extractor.extractSymbol(sourcePath, 'add');
+      if (!symbol) throw new Error('Expected symbol to be defined');
       const correctHash = hasher.hashSymbol(symbol);
 
       // Write graph.json with matching hash
@@ -147,7 +148,8 @@ describe('StaleChecker', () => {
 
       const extractor = new TypeScriptExtractor();
       const hasher = new ContentHasher();
-      const symbol = extractor.extractSymbol(sourcePath, 'test')!;
+      const symbol = extractor.extractSymbol(sourcePath, 'test');
+      if (!symbol) throw new Error('Expected symbol to be defined');
       const correctHash = hasher.hashSymbol(symbol);
 
       const graph = makeGraph([

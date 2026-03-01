@@ -61,8 +61,8 @@ function buildSymbolIndexFromGraph(graph: FlowGraph): SymbolIndex {
     if (!relatedByNodeId.has(edge.source)) relatedByNodeId.set(edge.source, new Set());
     if (!relatedByNodeId.has(edge.target)) relatedByNodeId.set(edge.target, new Set());
 
-    relatedByNodeId.get(edge.source)!.add(targetNode.name);
-    relatedByNodeId.get(edge.target)!.add(sourceNode.name);
+    relatedByNodeId.get(edge.source)?.add(targetNode.name);
+    relatedByNodeId.get(edge.target)?.add(sourceNode.name);
   }
 
   for (const node of graph.nodes) {

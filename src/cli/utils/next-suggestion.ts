@@ -21,7 +21,7 @@ export interface ProjectScan {
 /**
  * Scan the project and return coverage data.
  */
-export function scanProject(outputDir: string, scope: TreckConfig['scope']): ProjectScan {
+export function scanProject(_outputDir: string, scope: TreckConfig['scope']): ProjectScan {
   const sourceFiles = findSourceFiles(process.cwd(), scope);
   const allSymbols: ProjectScan['allSymbols'] = [];
 
@@ -70,7 +70,7 @@ const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
  * so spinner animations stay smooth.
  */
 export async function scanProjectAsync(
-  outputDir: string,
+  _outputDir: string,
   scope: TreckConfig['scope'],
   onProgress?: (message: string) => void,
 ): Promise<ProjectScan> {

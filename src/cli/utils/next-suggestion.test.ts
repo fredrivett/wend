@@ -276,6 +276,7 @@ describe('isTrivialBody', () => {
     });
 
     it('return with template literal', () => {
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional test input containing template syntax
       expect(isTrivialBody('{ return `Hello ${name}` }')).toBe(true);
     });
 
